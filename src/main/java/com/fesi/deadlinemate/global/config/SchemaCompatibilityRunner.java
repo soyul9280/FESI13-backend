@@ -21,7 +21,6 @@ public class SchemaCompatibilityRunner implements ApplicationRunner {
 
     @Override
     public void run(ApplicationArguments args) {
-        dropColumnIfExists("gathering_members", "overall_achievement_rate");
     }
 
     private void dropColumnIfExists(String tableName, String columnName) {

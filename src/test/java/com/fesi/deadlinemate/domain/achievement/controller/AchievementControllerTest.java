@@ -8,7 +8,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 import com.fesi.deadlinemate.domain.achievement.dto.response.AchievementRankingResponse;
 import com.fesi.deadlinemate.domain.achievement.dto.response.AchievementResponse;
-import com.fesi.deadlinemate.domain.achievement.service.AchievementService;
+import com.fesi.deadlinemate.domain.achievement.service.AchievementQueryService;
 import com.fesi.deadlinemate.global.security.JwtTokenProvider;
 import java.math.BigDecimal;
 import java.util.List;
@@ -37,7 +37,7 @@ class AchievementControllerTest {
     private JwtTokenProvider jwtTokenProvider;
 
     @MockitoBean
-    private AchievementService achievementService;
+    private AchievementQueryService achievementQueryService;
 
     private String token;
     private AchievementResponse achievementResponse;
@@ -57,7 +57,7 @@ class AchievementControllerTest {
         @Test
         @DisplayName("인증된 사용자는 모임 전체 달성률 현황을 조회할 수 있다")
         void getAchievements_success() throws Exception {
-            given(achievementService.getAchievements(1L, 1L))
+            given(achievementQueryService.getAchievements(1L, 1L))
                     .willReturn(achievementResponse);
 
             mockMvc.perform(get("/api/v1/gatherings/{gatheringId}/achievements", 1L)
@@ -85,7 +85,7 @@ class AchievementControllerTest {
         @Test
         @DisplayName("인증된 사용자는 달성률 순위를 조회할 수 있다")
         void getRanking_success() throws Exception {
-            given(achievementService.getRanking(1L, 1L))
+            given(achievementQueryService.getRanking(1L, 1L))
                     .willReturn(rankingResponse);
 
             mockMvc.perform(get("/api/v1/gatherings/{gatheringId}/achievements/ranking", 1L)

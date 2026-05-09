@@ -49,12 +49,14 @@ public class GatheringMember {
 
     @Builder
     public GatheringMember(Long gatheringId, Long userId, GatheringRole role,
-                           String personalGoal, boolean isActive) {
+                           String personalGoal, boolean isActive,
+                           BigDecimal overallAchievementRate) {
         this.gatheringId = gatheringId;
         this.userId = userId;
         this.role = role;
         this.personalGoal = personalGoal;
         this.isActive = isActive;
+        this.overallAchievementRate = overallAchievementRate;
     }
 
     public boolean isLeader() {

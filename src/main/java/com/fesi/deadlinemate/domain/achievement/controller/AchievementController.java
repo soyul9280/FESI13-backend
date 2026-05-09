@@ -2,7 +2,7 @@ package com.fesi.deadlinemate.domain.achievement.controller;
 
 import com.fesi.deadlinemate.domain.achievement.dto.response.AchievementRankingResponse;
 import com.fesi.deadlinemate.domain.achievement.dto.response.AchievementResponse;
-import com.fesi.deadlinemate.domain.achievement.service.AchievementService;
+import com.fesi.deadlinemate.domain.achievement.service.AchievementQueryService;
 import com.fesi.deadlinemate.global.common.ApiResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.Authentication;
@@ -16,7 +16,7 @@ import org.springframework.web.bind.annotation.RestController;
 @RequiredArgsConstructor
 public class AchievementController {
 
-    private final AchievementService achievementService;
+    private final AchievementQueryService achievementQueryService;
 
     @GetMapping("/{gatheringId}/achievements")
     public ApiResponse<AchievementResponse> getAchievements(
@@ -25,7 +25,7 @@ public class AchievementController {
     ) {
         Long userId = (Long) authentication.getPrincipal();
         return ApiResponse.success(
-                achievementService.getAchievements(gatheringId, userId)
+                achievementQueryService.getAchievements(gatheringId, userId)
         );
     }
 
@@ -36,7 +36,7 @@ public class AchievementController {
     ) {
         Long userId = (Long) authentication.getPrincipal();
         return ApiResponse.success(
-                achievementService.getRanking(gatheringId, userId)
+                achievementQueryService.getRanking(gatheringId, userId)
         );
     }
 }

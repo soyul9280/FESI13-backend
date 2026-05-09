@@ -49,7 +49,6 @@ public class MembershipQueryService {
     private final GatheringCategoryRepository gatheringCategoryRepository;
     private final CategoryRepository categoryRepository;
     private final UserClient userClient;
-    private final TodoRepository todoRepository;
 
     public MyGatheringListResponse getMyGatherings(Long userId, String status, String sort, int page, int limit) {
         int validatedPage = Math.max(page, 1);
@@ -143,21 +142,10 @@ public class MembershipQueryService {
         Map<Long, BigDecimal> achievementRates = members.stream()
                 .collect(Collectors.toMap(
                         GatheringMember::getUserId,
-                        member -> calculateOverallAchievementRate(gatheringId, member.getUserId())
+                        GatheringMember::getOverallAchievementRate
                 ));
 
         return MemberListResponse.of(members, userMap, achievementRates);
-    }
-
-    private BigDecimal calculateOverallAchievementRate(Long gatheringId, Long userId) {
-        long totalCount = todoRepository.countByGatheringIdAndUserId(gatheringId, userId);
-        if (totalCount == 0) {
-            return BigDecimal.ZERO.setScale(1);
-        }
-        long completedCount = todoRepository.countByGatheringIdAndUserIdAndIsCompletedTrue(gatheringId, userId);
-        return BigDecimal.valueOf(completedCount)
-                .multiply(BigDecimal.valueOf(100))
-                .divide(BigDecimal.valueOf(totalCount), 1, RoundingMode.HALF_UP);
     }
 
     private Page<Gathering> resolveGatheringPage(List<Long> ids, String status, boolean isOldest, PageRequest pageable) {
