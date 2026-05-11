@@ -29,11 +29,12 @@ public class QueryLoggingAspect {
     private void logAndClear() {
         try {
             QueryCountContext ctx = QueryCountContext.current();
-            if (ctx == null || !ctx.hasN1()) return;
+            if (ctx == null) return;
 
             String url = resolveUrl();
-            log.debug("Query Statistics: URL = {}, Query Count = {}, Query Time = {}(ms)",
-                    url, ctx.getTotalCount(), ctx.getTotalTimeMs());
+            String prefix = ctx.hasN1() ? "[N+1] " : "";
+            log.debug("{}Query Statistics: URL = {}, Query Count = {}, Query Time = {}(ms)",
+                    prefix, url, ctx.getTotalCount(), ctx.getTotalTimeMs());
         } finally {
             QueryCountContext.clear();
         }

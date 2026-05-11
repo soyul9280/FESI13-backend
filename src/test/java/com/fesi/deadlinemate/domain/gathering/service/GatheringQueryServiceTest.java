@@ -6,6 +6,8 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyList;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
 
 import com.fesi.deadlinemate.domain.category.entity.Category;
 import com.fesi.deadlinemate.domain.category.entity.GatheringCategory;
@@ -122,6 +124,40 @@ class GatheringQueryServiceTest {
             assertThat(response.popular().get(0).title()).isEqualTo("React 스터디");
             assertThat(response.deadline()).isEmpty();
             assertThat(response.latest()).isEmpty();
+        }
+
+        @Test
+        @DisplayName("3개 섹션 모두에 데이터가 있을 때 배치 쿼리가 1회만 실행된다")
+        void fetchesRelatedDataOnceForAllSections() {
+            GatheringListRow row1 = sampleRow(1L, 10L);
+            GatheringListRow row2 = sampleRow(2L, 20L);
+            GatheringListRow row3 = sampleRow(3L, 30L);
+            given(gatheringRepository.findMainPopular(5)).willReturn(List.of(row1));
+            given(gatheringRepository.findMainDeadline(5)).willReturn(List.of(row2));
+            given(gatheringRepository.findMainLatest(5)).willReturn(List.of(row3));
+
+            List<Long> allIds = List.of(1L, 2L, 3L);
+            given(gatheringTagRepository.findByGatheringIdInOrderByGatheringIdAscIdAsc(allIds))
+                    .willReturn(List.of());
+            given(gatheringCategoryRepository.findByGatheringIdIn(allIds))
+                    .willReturn(List.of());
+            given(categoryRepository.findByIdIn(anyList())).willReturn(List.of());
+            given(userClient.findByIds(anyList())).willReturn(Map.of(
+                    10L, UserInfo.builder().id(10L).nickname("리더1").profileImage(null).build(),
+                    20L, UserInfo.builder().id(20L).nickname("리더2").profileImage(null).build(),
+                    30L, UserInfo.builder().id(30L).nickname("리더3").profileImage(null).build()
+            ));
+
+            GatheringMainResponse response = gatheringQueryService.getMainGatherings(5);
+
+            assertThat(response.popular()).hasSize(1);
+            assertThat(response.deadline()).hasSize(1);
+            assertThat(response.latest()).hasSize(1);
+            verify(gatheringTagRepository, times(1))
+                    .findByGatheringIdInOrderByGatheringIdAscIdAsc(allIds);
+            verify(gatheringCategoryRepository, times(1))
+                    .findByGatheringIdIn(allIds);
+            verify(userClient, times(1)).findByIds(anyList());
         }
     }
 

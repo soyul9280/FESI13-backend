@@ -266,6 +266,38 @@ public class GatheringApplicationService {
             throw new BusinessException(ErrorCode.ALREADY_GATHERING_MEMBER);
         }
         gathering.increaseCurrentMembers();
+
+        if (gathering.getCurrentMembers() >= gathering.getMaxMembers()) {
+            autoRejectRemainingPending(gathering, application.getId());
+        }
+    }
+
+    private void autoRejectRemainingPending(Gathering gathering, Long acceptedApplicationId) {
+        List<GatheringApplication> pendingApplications = gatheringApplicationRepository
+                .findByGatheringIdAndStatusAndIdNot(
+                        gathering.getId(), ApplicationStatus.PENDING, acceptedApplicationId);
+
+        if (pendingApplications.isEmpty()) {
+            return;
+        }
+
+        gatheringApplicationRepository.rejectAllPendingExcept(
+                gathering.getId(),
+                acceptedApplicationId,
+                ApplicationStatus.PENDING,
+                ApplicationStatus.REJECTED
+        );
+
+        for (GatheringApplication pending : pendingApplications) {
+            eventPublisher.publishEvent(new GatheringApplicationUpdatedEvent(
+                    pending.getId(),
+                    gathering.getId(),
+                    pending.getApplicantId(),
+                    gathering.getLeaderId(),
+                    gathering.getTitle(),
+                    ApplicationStatus.REJECTED
+            ));
+        }
     }
 
     private void rejectApplication(GatheringApplication application) {
