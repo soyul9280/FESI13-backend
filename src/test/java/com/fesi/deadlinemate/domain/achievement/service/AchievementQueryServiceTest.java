@@ -3,6 +3,8 @@ package com.fesi.deadlinemate.domain.achievement.service;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.ArgumentMatchers.anyCollection;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -81,7 +83,8 @@ class AchievementQueryServiceTest {
         when(todo2.getWeekNumber()).thenReturn(1);
         when(todo2.isCompleted()).thenReturn(false);
 
-        when(todoRepository.findByGatheringIdOrderByWeekNumberAscCreatedAtAsc(GATHERING_ID))
+        when(todoRepository.findByGatheringIdAndUserIdInOrderByWeekNumberAscCreatedAtAsc(
+                eq(GATHERING_ID), anyCollection()))
                 .thenReturn(List.of(todo1, todo2));
 
         UserInfo user1 = mock(UserInfo.class);

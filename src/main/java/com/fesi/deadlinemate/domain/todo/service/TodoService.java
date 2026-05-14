@@ -1,7 +1,7 @@
 package com.fesi.deadlinemate.domain.todo.service;
 
-import com.fesi.deadlinemate.domain.achievement.service.AchievementQueryService;
 import com.fesi.deadlinemate.domain.achievement.service.AchievementService;
+import com.fesi.deadlinemate.global.common.AchievementRateCalculator;
 import com.fesi.deadlinemate.domain.gathering.entity.Gathering;
 import com.fesi.deadlinemate.domain.gathering.entity.GatheringMember;
 import com.fesi.deadlinemate.domain.gathering.repository.GatheringMemberRepository;
@@ -262,7 +262,7 @@ public class TodoService {
                 gathering.getId(), userId, targetWeek
         );
 
-        return calculateRate(completedCount, totalCount);
+        return AchievementRateCalculator.calculateRate(completedCount, totalCount);
     }
 
     private Integer resolveWeekForRead(Gathering gathering, Integer requestedWeek) {
@@ -286,18 +286,8 @@ public class TodoService {
 
     private BigDecimal calculateOverallAchievementRate(Long gatheringId, Long userId) {
         long totalCount = todoRepository.countByGatheringIdAndUserId(gatheringId, userId);
-        if (totalCount == 0) {
-            return BigDecimal.ZERO.setScale(1);
-        }
-
         long completedCount = todoRepository.countByGatheringIdAndUserIdAndIsCompletedTrue(gatheringId, userId);
-        return calculateRate(completedCount, totalCount);
-    }
-
-    private BigDecimal calculateRate(long completedCount, long totalCount) {
-        return BigDecimal.valueOf(completedCount)
-                .multiply(BigDecimal.valueOf(100))
-                .divide(BigDecimal.valueOf(totalCount), 1, RoundingMode.HALF_UP);
+        return AchievementRateCalculator.calculateRate(completedCount, totalCount);
     }
 
     private Map<Long, UserInfo> loadUsers(List<Long> userIds) {

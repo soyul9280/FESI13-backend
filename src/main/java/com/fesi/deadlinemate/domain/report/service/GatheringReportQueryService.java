@@ -13,6 +13,7 @@ import com.fesi.deadlinemate.domain.report.dto.WeeklyRateDto;
 import com.fesi.deadlinemate.domain.report.entity.GatheringReport;
 import com.fesi.deadlinemate.domain.report.repository.GatheringReportRepository;
 import com.fesi.deadlinemate.domain.todo.entity.Todo;
+import com.fesi.deadlinemate.global.common.AchievementRateCalculator;
 import com.fesi.deadlinemate.domain.todo.repository.TodoRepository;
 import com.fesi.deadlinemate.domain.user.client.UserClient;
 import com.fesi.deadlinemate.domain.user.client.dto.UserInfo;
@@ -22,10 +23,8 @@ import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -58,12 +57,10 @@ public class GatheringReportQueryService {
                 .distinct()
                 .toList();
 
-        Set<Long> userIdSet = new HashSet<>(userIds);
         Map<Long, UserInfo> userMap = loadUsers(userIds);
 
-        List<Todo> todos = todoRepository.findByGatheringIdOrderByWeekNumberAscCreatedAtAsc(gatheringId).stream()
-                .filter(todo -> userIdSet.contains(todo.getUserId()))
-                .toList();
+        List<Todo> todos = todoRepository
+                .findByGatheringIdAndUserIdInOrderByWeekNumberAscCreatedAtAsc(gatheringId, userIds);
 
         List<GatheringReportResponse.MemberResultResponse> memberResults = activeMembers.stream()
                 .map(member -> toMemberResult(member.getUserId(), gathering.getTotalWeeks(), todos, userMap))
@@ -72,10 +69,10 @@ public class GatheringReportQueryService {
         List<GatheringReportResponse.WeeklyRateResponse> teamWeeklyRates = parseWeeklyRates(report.getWeeklyRates());
 
         GatheringReportResponse.AwardsResponse awards = GatheringReportResponse.AwardsResponse.builder()
-                .mvp(toUserAward(report.getMvpUserId(), userMap))
-                .longestStreak(toStreakAward(report.getLongestStreakUserId(), memberResults, userMap))
-                .mostImproved(toUserAward(report.getMostImprovedUserId(), userMap))
-                .attendance(toUserAward(report.getAttendanceUserId(), userMap))
+                .mvp(toUserAwards(report.getMvpUserIds(), userMap))
+                .longestStreak(toStreakAwards(report.getLongestStreakUserIds(), report.getLongestStreakValue(), userMap))
+                .mostImproved(toUserAwards(report.getMostImprovedUserIds(), userMap))
+                .attendance(toUserAwards(report.getAttendanceUserIds(), userMap))
                 .build();
 
         return GatheringReportResponse.builder()
@@ -126,7 +123,7 @@ public class GatheringReportQueryService {
                 .filter(Todo::isCompleted)
                 .count();
 
-        BigDecimal overallRate = calculateRate(completedTodos, totalTodos);
+        BigDecimal overallRate = AchievementRateCalculator.calculateRate(completedTodos, totalTodos);
 
         List<BigDecimal> weeklyRates = new ArrayList<>();
         for (int week = 1; week <= totalWeeks; week++) {
@@ -141,7 +138,7 @@ public class GatheringReportQueryService {
                     .filter(Todo::isCompleted)
                     .count();
 
-            weeklyRates.add(calculateRate(weekCompleted, weekTotal));
+            weeklyRates.add(AchievementRateCalculator.calculateRate(weekCompleted, weekTotal));
         }
 
         int longestStreak = calculateLongestPerfectStreak(weeklyRates);
@@ -157,16 +154,6 @@ public class GatheringReportQueryService {
                 .totalTodos(totalTodos)
                 .weeklyRates(weeklyRates)
                 .build();
-    }
-
-    private BigDecimal calculateRate(long completedCount, long totalCount) {
-        if (totalCount == 0) {
-            return BigDecimal.ZERO.setScale(1, RoundingMode.HALF_UP);
-        }
-
-        return BigDecimal.valueOf(completedCount)
-                .multiply(BigDecimal.valueOf(100))
-                .divide(BigDecimal.valueOf(totalCount), 1, RoundingMode.HALF_UP);
     }
 
     private int calculateLongestPerfectStreak(List<BigDecimal> weeklyRates) {
@@ -202,50 +189,50 @@ public class GatheringReportQueryService {
         }
     }
 
-    private GatheringReportResponse.UserAwardResponse toUserAward(
-            Long userId,
+    private List<GatheringReportResponse.UserAwardResponse> toUserAwards(
+            List<Long> userIds,
             Map<Long, UserInfo> userMap
     ) {
-        if (userId == null) {
-            return null;
+        if (userIds == null || userIds.isEmpty()) {
+            return List.of();
         }
 
-        UserInfo user = userMap.get(userId);
-        if (user == null) {
-            user = userClient.findById(userId);
-        }
-
-        return GatheringReportResponse.UserAwardResponse.builder()
-                .userId(userId)
-                .nickname(user != null ? user.getNickname() : null)
-                .build();
+        return userIds.stream()
+                .map(userId -> {
+                    UserInfo user = userMap.get(userId);
+                    if (user == null) {
+                        user = userClient.findById(userId);
+                    }
+                    return GatheringReportResponse.UserAwardResponse.builder()
+                            .userId(userId)
+                            .nickname(user != null ? user.getNickname() : null)
+                            .build();
+                })
+                .toList();
     }
 
-    private GatheringReportResponse.StreakAwardResponse toStreakAward(
-            Long userId,
-            List<GatheringReportResponse.MemberResultResponse> memberResults,
+    private List<GatheringReportResponse.StreakAwardResponse> toStreakAwards(
+            List<Long> userIds,
+            int streakValue,
             Map<Long, UserInfo> userMap
     ) {
-        if (userId == null) {
-            return null;
+        if (userIds == null || userIds.isEmpty()) {
+            return List.of();
         }
 
-        Integer streak = memberResults.stream()
-                .filter(result -> result.userId().equals(userId))
-                .map(GatheringReportResponse.MemberResultResponse::longestStreak)
-                .findFirst()
-                .orElse(0);
-
-        UserInfo user = userMap.get(userId);
-        if (user == null) {
-            user = userClient.findById(userId);
-        }
-
-        return GatheringReportResponse.StreakAwardResponse.builder()
-                .userId(userId)
-                .nickname(user != null ? user.getNickname() : null)
-                .streak(streak)
-                .build();
+        return userIds.stream()
+                .map(userId -> {
+                    UserInfo user = userMap.get(userId);
+                    if (user == null) {
+                        user = userClient.findById(userId);
+                    }
+                    return GatheringReportResponse.StreakAwardResponse.builder()
+                            .userId(userId)
+                            .nickname(user != null ? user.getNickname() : null)
+                            .streak(streakValue)
+                            .build();
+                })
+                .toList();
     }
 
     private Map<Long, UserInfo> loadUsers(List<Long> userIds) {

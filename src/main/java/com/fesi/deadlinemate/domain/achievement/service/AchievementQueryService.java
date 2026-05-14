@@ -46,9 +46,8 @@ public class AchievementQueryService {
                 .map(GatheringMember::getUserId)
                 .collect(Collectors.toSet());
 
-        List<Todo> todos = todoRepository.findByGatheringIdOrderByWeekNumberAscCreatedAtAsc(gatheringId).stream()
-                .filter(todo -> activeUserIds.contains(todo.getUserId()))
-                .toList();
+        List<Todo> todos = todoRepository
+                .findByGatheringIdAndUserIdInOrderByWeekNumberAscCreatedAtAsc(gatheringId, activeUserIds);
 
         Map<Long, UserInfo> userMap = loadUsers(
                 activeMembers.stream()
@@ -106,9 +105,8 @@ public class AchievementQueryService {
                 .map(GatheringMember::getUserId)
                 .collect(Collectors.toSet());
 
-        List<Todo> todos = todoRepository.findByGatheringIdOrderByWeekNumberAscCreatedAtAsc(gatheringId).stream()
-                .filter(todo -> activeUserIds.contains(todo.getUserId()))
-                .toList();
+        List<Todo> todos = todoRepository
+                .findByGatheringIdAndUserIdInOrderByWeekNumberAscCreatedAtAsc(gatheringId, activeUserIds);
 
         Map<Long, UserInfo> userMap = loadUsers(
                 activeMembers.stream()
@@ -124,18 +122,19 @@ public class AchievementQueryService {
                         member.getUserId(),
                         calculateOverallRate(todosByUser.getOrDefault(member.getUserId(), List.of()))
                 ))
-                .sorted(Comparator
-                        .comparing(MemberRateRow::overallRate, Comparator.reverseOrder())
-                        .thenComparing(MemberRateRow::userId))
+                .sorted(Comparator.comparing(MemberRateRow::overallRate, Comparator.reverseOrder()))
                 .toList();
 
         List<AchievementRankingResponse.RankingItemResponse> ranking = new ArrayList<>();
+        int rank = 1;
         for (int i = 0; i < memberRates.size(); i++) {
             MemberRateRow row = memberRates.get(i);
+            if (i > 0 && row.overallRate().compareTo(memberRates.get(i - 1).overallRate()) != 0) {
+                rank = i + 1;
+            }
             UserInfo user = userMap.get(row.userId());
-
             ranking.add(AchievementRankingResponse.RankingItemResponse.builder()
-                    .rank(i + 1)
+                    .rank(rank)
                     .userId(row.userId())
                     .nickname(user != null ? user.getNickname() : null)
                     .profileImage(user != null ? user.getProfileImage() : null)

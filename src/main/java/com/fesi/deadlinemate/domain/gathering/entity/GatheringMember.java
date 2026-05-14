@@ -8,6 +8,7 @@ import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.Lob;
+import jakarta.persistence.Index;
 import jakarta.persistence.Table;
 import jakarta.persistence.UniqueConstraint;
 import java.math.BigDecimal;
@@ -19,7 +20,10 @@ import lombok.NoArgsConstructor;
 
 @Entity
 @Table(name = "gathering_members",
-        uniqueConstraints = @UniqueConstraint(name = "uk_gathering_members_user", columnNames = {"gatheringId", "userId"}))
+        uniqueConstraints = @UniqueConstraint(name = "uk_gathering_members_user", columnNames = {"gatheringId", "userId"}),
+        indexes = {
+                @Index(name = "idx_gathering_members_user_is_active", columnList = "userId, isActive")
+        })
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class GatheringMember {
