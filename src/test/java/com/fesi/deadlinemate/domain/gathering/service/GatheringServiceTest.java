@@ -432,11 +432,8 @@ class GatheringServiceTest {
             Gathering gathering = inProgressGathering();
             given(gatheringRepository.findById(100L)).willReturn(Optional.of(gathering));
 
-            given(gatheringTagRepository.findByGatheringIdOrderByIdAsc(100L))
-                    .willReturn(List.of(
-                            GatheringTag.builder().gatheringId(100L).tag("React").build(),
-                            GatheringTag.builder().gatheringId(100L).tag("프론트엔드").build()
-                    ));
+            given(gatheringTagRepository.findTagsByGatheringId(100L))
+                    .willReturn(List.of("React", "프론트엔드"));
 
             WeeklyPlan existingPlan1 = WeeklyPlan.builder()
                     .gatheringId(100L)
@@ -492,7 +489,7 @@ class GatheringServiceTest {
 
             then(gatheringTagRepository).should(never()).deleteByGatheringId(anyLong());
             then(gatheringTagRepository).should(never()).saveAll(anyList());
-            then(gatheringTagRepository).should().findByGatheringIdOrderByIdAsc(100L);
+            then(gatheringTagRepository).should().findTagsByGatheringId(100L);
 
             then(weeklyPlanDetailRepository).should().deleteByWeeklyPlanIdIn(List.of(11L, 12L));
             then(weeklyPlanRepository).should().deleteByGatheringId(100L);
@@ -518,11 +515,8 @@ class GatheringServiceTest {
             // given
             Gathering gathering = inProgressGathering();
             given(gatheringRepository.findById(100L)).willReturn(Optional.of(gathering));
-            given(gatheringTagRepository.findByGatheringIdOrderByIdAsc(100L))
-                    .willReturn(List.of(
-                            GatheringTag.builder().gatheringId(100L).tag("React").build(),
-                            GatheringTag.builder().gatheringId(100L).tag("프론트엔드").build()
-                    ));
+            given(gatheringTagRepository.findTagsByGatheringId(100L))
+                    .willReturn(List.of("React", "프론트엔드"));
             mockCurrentGatheringCategory(100L, 1L);
 
             UpdateGatheringCommand command = inProgressAllowedUpdateCommand.toBuilder()
@@ -536,7 +530,7 @@ class GatheringServiceTest {
                     .isEqualTo(ErrorCode.INVALID_IN_PROGRESS_UPDATE_ITEMS);
 
             then(gatheringRepository).should().findById(100L);
-            then(gatheringTagRepository).should().findByGatheringIdOrderByIdAsc(100L);
+            then(gatheringTagRepository).should().findTagsByGatheringId(100L);
             then(gatheringTagRepository).should(never()).deleteByGatheringId(anyLong());
             then(gatheringTagRepository).should(never()).saveAll(anyList());
             then(weeklyPlanRepository).should(never()).deleteByGatheringId(anyLong());
@@ -568,7 +562,7 @@ class GatheringServiceTest {
             then(gatheringTagRepository).should(never()).saveAll(anyList());
             then(gatheringCategoryRepository).should(never()).deleteByGatheringId(anyLong());
             then(gatheringCategoryRepository).should(never()).saveAll(anyList());
-            then(gatheringTagRepository).should(never()).findByGatheringIdOrderByIdAsc(anyLong());
+            then(gatheringTagRepository).should(never()).findTagsByGatheringId(anyLong());
             then(weeklyPlanRepository).should(never()).deleteByGatheringId(anyLong());
             then(weeklyPlanRepository).should(never()).saveAll(anyList());
             then(eventPublisher).should(never()).publishEvent(any());

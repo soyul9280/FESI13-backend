@@ -136,9 +136,9 @@ public class GatheringService {
         gatheringLikeRepository.deleteByGatheringId(gatheringId);
 
         List<String> imageUrls = gatheringImageRepository
-                .findByGatheringIdOrderByDisplayOrderAsc(gatheringId)
+                .findImageRowsByGatheringId(gatheringId)
                 .stream()
-                .map(GatheringImage::getImageUrl)
+                .map(image -> image.getImageUrl())
                 .toList();
         gatheringImageRepository.deleteByGatheringId(gatheringId);
         imageUrls.forEach(imageStorageService::delete);
@@ -416,8 +416,8 @@ public class GatheringService {
 
     private void replaceImages(Long gatheringId, List<String> imageUrls) {
         List<String> existingImageUrls = gatheringImageRepository
-                .findByGatheringIdOrderByDisplayOrderAsc(gatheringId).stream()
-                .map(GatheringImage::getImageUrl)
+                .findImageRowsByGatheringId(gatheringId).stream()
+                .map(image -> image.getImageUrl())
                 .toList();
 
         List<String> finalImageUrls = imageUrls == null ? List.of() : imageUrls;
@@ -482,9 +482,7 @@ public class GatheringService {
     }
 
     private List<String> findTags(Long gatheringId) {
-        return gatheringTagRepository.findByGatheringIdOrderByIdAsc(gatheringId).stream()
-                .map(GatheringTag::getTag)
-                .toList();
+        return gatheringTagRepository.findTagsByGatheringId(gatheringId);
     }
 
     private void saveWeeklyPlansFromCreate(

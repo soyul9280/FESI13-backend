@@ -8,7 +8,6 @@ import com.fesi.deadlinemate.domain.gathering.dto.response.GatheringListItemResp
 import com.fesi.deadlinemate.domain.gathering.dto.response.GatheringListResponse;
 import com.fesi.deadlinemate.domain.gathering.dto.response.GatheringMainResponse;
 import com.fesi.deadlinemate.domain.gathering.entity.GatheringMember;
-import com.fesi.deadlinemate.domain.gathering.entity.GatheringTag;
 import com.fesi.deadlinemate.domain.gathering.entity.WeeklyPlan;
 import com.fesi.deadlinemate.domain.gathering.entity.WeeklyPlanDetail;
 import com.fesi.deadlinemate.domain.gathering.projection.GatheringDetailRow;
@@ -121,12 +120,10 @@ public class GatheringQueryService {
 
         List<String> categories = findCategoryNamesByGatheringId(gatheringId);
 
-        List<String> tags = gatheringTagRepository.findByGatheringIdOrderByIdAsc(gatheringId).stream()
-                .map(GatheringTag::getTag)
-                .toList();
+        List<String> tags = gatheringTagRepository.findTagsByGatheringId(gatheringId);
 
         List<GatheringDetailResponse.ImageResponse> images = gatheringImageRepository
-                .findByGatheringIdOrderByDisplayOrderAsc(gatheringId).stream()
+                .findImageRowsByGatheringId(gatheringId).stream()
                 .map(image -> GatheringDetailResponse.ImageResponse.builder()
                         .url(image.getImageUrl())
                         .displayOrder(image.getDisplayOrder())
@@ -220,16 +217,16 @@ public class GatheringQueryService {
                 .toList();
 
         Map<Long, List<String>> tagsMap = gatheringTagRepository
-                .findByGatheringIdInOrderByGatheringIdAscIdAsc(gatheringIds)
+                .findTagRowsByGatheringIdIn(gatheringIds)
                 .stream()
                 .collect(Collectors.groupingBy(
-                        GatheringTag::getGatheringId,
+                        row -> row.getGatheringId(),
                         LinkedHashMap::new,
-                        Collectors.mapping(GatheringTag::getTag, Collectors.toList())
+                        Collectors.mapping(row -> row.getTag(), Collectors.toList())
                 ));
 
         Map<Long, List<String>> imageUrlsMap = gatheringImageRepository
-                .findByGatheringIdInOrderByGatheringIdAscDisplayOrderAsc(gatheringIds)
+                .findImageRowsByGatheringIdIn(gatheringIds)
                 .stream()
                 .collect(Collectors.groupingBy(
                         image -> image.getGatheringId(),

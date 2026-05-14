@@ -10,7 +10,6 @@ import com.fesi.deadlinemate.domain.gathering.entity.Gathering;
 import com.fesi.deadlinemate.domain.gathering.entity.GatheringMember;
 import com.fesi.deadlinemate.domain.gathering.entity.GatheringRole;
 import com.fesi.deadlinemate.domain.gathering.entity.GatheringStatus;
-import com.fesi.deadlinemate.domain.gathering.entity.GatheringTag;
 import com.fesi.deadlinemate.domain.gathering.repository.GatheringMemberRepository;
 import com.fesi.deadlinemate.domain.gathering.repository.GatheringRepository;
 import com.fesi.deadlinemate.domain.gathering.repository.GatheringTagRepository;
@@ -77,11 +76,11 @@ public class MembershipQueryService {
                 .collect(Collectors.toMap(GatheringMember::getGatheringId, m -> m));
 
         Map<Long, List<String>> tagsMap = gatheringTagRepository
-                .findByGatheringIdInOrderByGatheringIdAscIdAsc(resultGatheringIds).stream()
+                .findTagRowsByGatheringIdIn(resultGatheringIds).stream()
                 .collect(Collectors.groupingBy(
-                        GatheringTag::getGatheringId,
+                        row -> row.getGatheringId(),
                         LinkedHashMap::new,
-                        Collectors.mapping(GatheringTag::getTag, Collectors.toList())
+                        Collectors.mapping(row -> row.getTag(), Collectors.toList())
                 ));
 
         Map<Long, List<String>> categoriesMap = buildCategoriesMap(resultGatheringIds);

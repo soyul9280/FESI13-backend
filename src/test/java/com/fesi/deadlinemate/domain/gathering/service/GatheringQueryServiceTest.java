@@ -20,7 +20,6 @@ import com.fesi.deadlinemate.domain.gathering.dto.response.GatheringMainResponse
 import com.fesi.deadlinemate.domain.gathering.entity.GatheringMember;
 import com.fesi.deadlinemate.domain.gathering.entity.GatheringRole;
 import com.fesi.deadlinemate.domain.gathering.entity.GatheringStatus;
-import com.fesi.deadlinemate.domain.gathering.entity.GatheringTag;
 import com.fesi.deadlinemate.domain.gathering.entity.GatheringType;
 import com.fesi.deadlinemate.domain.gathering.entity.WeeklyPlan;
 import com.fesi.deadlinemate.domain.gathering.projection.GatheringDetailRow;
@@ -137,7 +136,7 @@ class GatheringQueryServiceTest {
             given(gatheringRepository.findMainLatest(5)).willReturn(List.of(row3));
 
             List<Long> allIds = List.of(1L, 2L, 3L);
-            given(gatheringTagRepository.findByGatheringIdInOrderByGatheringIdAscIdAsc(allIds))
+            given(gatheringTagRepository.findTagRowsByGatheringIdIn(allIds))
                     .willReturn(List.of());
             given(gatheringCategoryRepository.findByGatheringIdIn(allIds))
                     .willReturn(List.of());
@@ -154,7 +153,7 @@ class GatheringQueryServiceTest {
             assertThat(response.deadline()).hasSize(1);
             assertThat(response.latest()).hasSize(1);
             verify(gatheringTagRepository, times(1))
-                    .findByGatheringIdInOrderByGatheringIdAscIdAsc(allIds);
+                    .findTagRowsByGatheringIdIn(allIds);
             verify(gatheringCategoryRepository, times(1))
                     .findByGatheringIdIn(allIds);
             verify(userClient, times(1)).findByIds(anyList());
@@ -216,10 +215,8 @@ class GatheringQueryServiceTest {
             setField(cat, "id", 1L);
             given(categoryRepository.findByIdIn(List.of(1L))).willReturn(List.of(cat));
 
-            given(gatheringTagRepository.findByGatheringIdOrderByIdAsc(10L))
-                    .willReturn(List.of(GatheringTag.builder().gatheringId(10L).tag("React").build()));
-            given(gatheringImageRepository.findByGatheringIdOrderByDisplayOrderAsc(10L))
-                    .willReturn(List.of());
+            given(gatheringTagRepository.findTagsByGatheringId(10L)).willReturn(List.of("React"));
+            given(gatheringImageRepository.findImageRowsByGatheringId(10L)).willReturn(List.of());
 
             WeeklyPlan plan = WeeklyPlan.builder()
                     .gatheringId(10L).weekNumber(1).title("1주차")
@@ -282,7 +279,7 @@ class GatheringQueryServiceTest {
      * gatheringIds 리스트에 아이템이 있을 때 호출되는 tag/category/user 레포 스텁을 설정한다.
      */
     private void mockListHelperDeps(List<Long> gatheringIds, Long leaderId) {
-        given(gatheringTagRepository.findByGatheringIdInOrderByGatheringIdAscIdAsc(gatheringIds))
+        given(gatheringTagRepository.findTagRowsByGatheringIdIn(gatheringIds))
                 .willReturn(List.of());
         given(gatheringCategoryRepository.findByGatheringIdIn(gatheringIds))
                 .willReturn(List.of());

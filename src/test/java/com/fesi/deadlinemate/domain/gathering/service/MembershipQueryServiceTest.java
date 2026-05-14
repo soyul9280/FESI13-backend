@@ -93,7 +93,7 @@ class MembershipQueryServiceTest {
                     .willReturn(new PageImpl<>(List.of(gathering)));
             given(gatheringMemberRepository.findByGatheringIdInAndUserIdAndIsActiveTrue(List.of(1L), 10L))
                     .willReturn(List.of(member));
-            given(gatheringTagRepository.findByGatheringIdInOrderByGatheringIdAscIdAsc(any(Collection.class)))
+            given(gatheringTagRepository.findTagRowsByGatheringIdIn(any(Collection.class)))
                     .willReturn(List.of());
             given(gatheringCategoryRepository.findByGatheringIdIn(List.of(1L)))
                     .willReturn(List.of(mapping));
@@ -122,7 +122,7 @@ class MembershipQueryServiceTest {
                     .willReturn(new PageImpl<>(List.of(gathering)));
             given(gatheringMemberRepository.findByGatheringIdInAndUserIdAndIsActiveTrue(List.of(1L), 10L))
                     .willReturn(List.of(member));
-            given(gatheringTagRepository.findByGatheringIdInOrderByGatheringIdAscIdAsc(any(Collection.class)))
+            given(gatheringTagRepository.findTagRowsByGatheringIdIn(any(Collection.class)))
                     .willReturn(List.of());
             given(gatheringCategoryRepository.findByGatheringIdIn(any())).willReturn(List.of());
             given(reviewRepository.findReviewedGatheringIds(any(), any())).willReturn(List.of());
@@ -144,7 +144,7 @@ class MembershipQueryServiceTest {
                     .willReturn(new PageImpl<>(List.of(gathering)));
             given(gatheringMemberRepository.findByGatheringIdInAndUserIdAndIsActiveTrue(List.of(1L), 10L))
                     .willReturn(List.of(member));
-            given(gatheringTagRepository.findByGatheringIdInOrderByGatheringIdAscIdAsc(any(Collection.class)))
+            given(gatheringTagRepository.findTagRowsByGatheringIdIn(any(Collection.class)))
                     .willReturn(List.of());
             given(gatheringCategoryRepository.findByGatheringIdIn(any())).willReturn(List.of());
             given(reviewRepository.findReviewedGatheringIds(any(), any())).willReturn(List.of());
@@ -169,7 +169,7 @@ class MembershipQueryServiceTest {
                     .willReturn(new PageImpl<>(List.of(gathering)));
             given(gatheringMemberRepository.findByGatheringIdInAndUserIdAndIsActiveTrue(List.of(1L), 10L))
                     .willReturn(List.of(member));
-            given(gatheringTagRepository.findByGatheringIdInOrderByGatheringIdAscIdAsc(any(Collection.class)))
+            given(gatheringTagRepository.findTagRowsByGatheringIdIn(any(Collection.class)))
                     .willReturn(List.of());
             given(gatheringCategoryRepository.findByGatheringIdIn(any())).willReturn(List.of());
             given(reviewRepository.findReviewedGatheringIds(10L, List.of(1L))).willReturn(List.of(1L));
