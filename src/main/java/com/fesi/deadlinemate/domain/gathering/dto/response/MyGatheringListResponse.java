@@ -31,11 +31,13 @@ public record MyGatheringListResponse(
             GatheringRole myRole,
             boolean isLiked,
             boolean hasReviewed,
+            int reviewedMembersCount,
             @Nullable Integer pendingApplicationCount
     ) {
         public static MyGatheringItem of(Gathering gathering, GatheringRole myRole,
                                          List<String> categories, List<String> tags,
-                                         boolean hasReviewed, Integer pendingApplicationCount) {
+                                         boolean hasReviewed, int reviewedMembersCount,
+                                         Integer pendingApplicationCount) {
             return MyGatheringItem.builder()
                     .id(gathering.getId())
                     .type(gathering.getType().getDisplayName())
@@ -51,6 +53,7 @@ public record MyGatheringListResponse(
                     .myRole(myRole)
                     .isLiked(false)
                     .hasReviewed(hasReviewed)
+                    .reviewedMembersCount(reviewedMembersCount)
                     .pendingApplicationCount(pendingApplicationCount)
                     .build();
         }

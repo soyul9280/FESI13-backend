@@ -7,6 +7,7 @@ import com.fesi.deadlinemate.domain.review.entity.ReviewTag;
 import com.fesi.deadlinemate.global.config.JpaConfig;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -132,23 +133,32 @@ class ReviewRepositoryTest {
     }
 
     @Nested
-    @DisplayName("리뷰 작성 여부 배치 조회")
-    class FindReviewedGatheringIds {
+    @DisplayName("모임별 리뷰 작성 수 집계")
+    class CountReviewedMembersGroupByGathering {
 
         @Test
-        @DisplayName("리뷰를 작성한 모임 ID만 반환한다")
-        void findReviewedGatheringIds() {
+        @DisplayName("모임별 리뷰 작성 수를 반환한다")
+        void countsPerGathering() {
             // given
             reviewRepository.saveAll(List.of(
                     review(1L, 1L, 2L, List.of(ReviewTag.DILIGENT)),
-                    review(2L, 1L, 2L, List.of(ReviewTag.PUNCTUAL))
+                    review(1L, 1L, 3L, List.of(ReviewTag.PUNCTUAL)),
+                    review(2L, 1L, 2L, List.of(ReviewTag.HELPFUL))
             ));
 
             // when
-            List<Long> result = reviewRepository.findReviewedGatheringIds(1L, List.of(1L, 2L, 3L));
+            List<ReviewRepository.ReviewCountRow> result =
+                    reviewRepository.countReviewedMembersGroupByGathering(1L, List.of(1L, 2L, 3L));
 
             // then
-            assertThat(result).containsExactlyInAnyOrder(1L, 2L);
+            Map<Long, Long> countMap = result.stream()
+                    .collect(Collectors.toMap(
+                            ReviewRepository.ReviewCountRow::getGatheringId,
+                            ReviewRepository.ReviewCountRow::getCount
+                    ));
+            assertThat(countMap).containsEntry(1L, 2L);
+            assertThat(countMap).containsEntry(2L, 1L);
+            assertThat(countMap).doesNotContainKey(3L);
         }
 
         @Test
@@ -158,7 +168,8 @@ class ReviewRepositoryTest {
             reviewRepository.save(review(1L, 1L, 2L, List.of(ReviewTag.DILIGENT)));
 
             // when
-            List<Long> result = reviewRepository.findReviewedGatheringIds(1L, List.of(2L, 3L));
+            List<ReviewRepository.ReviewCountRow> result =
+                    reviewRepository.countReviewedMembersGroupByGathering(1L, List.of(2L, 3L));
 
             // then
             assertThat(result).isEmpty();

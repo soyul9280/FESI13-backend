@@ -99,7 +99,7 @@ class MembershipQueryServiceTest {
                     .willReturn(List.of(mapping));
             given(categoryRepository.findByIdIn(List.of(100L)))
                     .willReturn(List.of(category));
-            given(reviewRepository.findReviewedGatheringIds(any(), any())).willReturn(List.of());
+            given(reviewRepository.countReviewedMembersGroupByGathering(any(), any())).willReturn(List.of());
             given(gatheringApplicationRepository.countByGatheringIdInAndStatus(any(), any())).willReturn(List.of());
 
             MyGatheringListResponse response = membershipQueryService.getMyGatherings(10L, "all", "latest", 1, 12);
@@ -125,7 +125,7 @@ class MembershipQueryServiceTest {
             given(gatheringTagRepository.findTagRowsByGatheringIdIn(any(Collection.class)))
                     .willReturn(List.of());
             given(gatheringCategoryRepository.findByGatheringIdIn(any())).willReturn(List.of());
-            given(reviewRepository.findReviewedGatheringIds(any(), any())).willReturn(List.of());
+            given(reviewRepository.countReviewedMembersGroupByGathering(any(), any())).willReturn(List.of());
             given(gatheringApplicationRepository.countByGatheringIdInAndStatus(any(), any())).willReturn(List.of());
 
             MyGatheringListResponse response = membershipQueryService.getMyGatherings(10L, "all", "oldest", 1, 12);
@@ -147,7 +147,7 @@ class MembershipQueryServiceTest {
             given(gatheringTagRepository.findTagRowsByGatheringIdIn(any(Collection.class)))
                     .willReturn(List.of());
             given(gatheringCategoryRepository.findByGatheringIdIn(any())).willReturn(List.of());
-            given(reviewRepository.findReviewedGatheringIds(any(), any())).willReturn(List.of());
+            given(reviewRepository.countReviewedMembersGroupByGathering(any(), any())).willReturn(List.of());
             List<Object[]> pendingCounts = new ArrayList<>();
             pendingCounts.add(new Object[]{1L, 3L});
             given(gatheringApplicationRepository.countByGatheringIdInAndStatus(List.of(1L), ApplicationStatus.PENDING))
@@ -172,12 +172,17 @@ class MembershipQueryServiceTest {
             given(gatheringTagRepository.findTagRowsByGatheringIdIn(any(Collection.class)))
                     .willReturn(List.of());
             given(gatheringCategoryRepository.findByGatheringIdIn(any())).willReturn(List.of());
-            given(reviewRepository.findReviewedGatheringIds(10L, List.of(1L))).willReturn(List.of(1L));
+            ReviewRepository.ReviewCountRow row = new ReviewRepository.ReviewCountRow() {
+                @Override public Long getGatheringId() { return 1L; }
+                @Override public Long getCount() { return 1L; }
+            };
+            given(reviewRepository.countReviewedMembersGroupByGathering(10L, List.of(1L))).willReturn(List.of(row));
             given(gatheringApplicationRepository.countByGatheringIdInAndStatus(any(), any())).willReturn(List.of());
 
             MyGatheringListResponse response = membershipQueryService.getMyGatherings(10L, "all", "latest", 1, 12);
 
             assertThat(response.gatherings().get(0).hasReviewed()).isTrue();
+            assertThat(response.gatherings().get(0).reviewedMembersCount()).isEqualTo(1);
         }
     }
 

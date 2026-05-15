@@ -27,7 +27,6 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.Set;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -85,9 +84,13 @@ public class MembershipQueryService {
 
         Map<Long, List<String>> categoriesMap = buildCategoriesMap(resultGatheringIds);
 
-        Set<Long> reviewedGatheringIds = Set.copyOf(
-                reviewRepository.findReviewedGatheringIds(userId, resultGatheringIds)
-        );
+        Map<Long, Integer> reviewedCountMap = reviewRepository
+                .countReviewedMembersGroupByGathering(userId, resultGatheringIds)
+                .stream()
+                .collect(Collectors.toMap(
+                        ReviewRepository.ReviewCountRow::getGatheringId,
+                        row -> row.getCount().intValue()
+                ));
 
         List<Long> leaderGatheringIds = memberMap.values().stream()
                 .filter(m -> GatheringRole.LEADER == m.getRole())
@@ -110,12 +113,14 @@ public class MembershipQueryService {
                     Integer pendingCount = GatheringRole.LEADER == (member != null ? member.getRole() : null)
                             ? pendingCountMap.getOrDefault(gathering.getId(), 0)
                             : null;
+                    int reviewedCount = reviewedCountMap.getOrDefault(gathering.getId(), 0);
                     return MyGatheringListResponse.MyGatheringItem.of(
                             gathering,
                             member != null ? member.getRole() : null,
                             categories,
                             tags,
-                            reviewedGatheringIds.contains(gathering.getId()),
+                            reviewedCount > 0,
+                            reviewedCount,
                             pendingCount
                     );
                 })
