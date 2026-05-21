@@ -10,7 +10,7 @@ services:
       options:
         awslogs-region: ap-northeast-2
         awslogs-group: /fesi13/app
-        awslogs-stream-prefix: app
+        awslogs-stream: fesi13-app
     environment:
       SPRING_PROFILES_ACTIVE: prod
       DB_URL: ${DB_URL}
