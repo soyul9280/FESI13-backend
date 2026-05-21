@@ -34,7 +34,9 @@ import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.ArgumentMatchers.anyCollection;
 import static org.mockito.ArgumentMatchers.anyList;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
@@ -103,7 +105,8 @@ class GatheringReportServiceTest {
         when(gatheringReportRepository.findByGatheringId(gatheringId)).thenReturn(Optional.empty());
         when(gatheringMemberRepository.findByGatheringIdAndIsActiveTrueOrderByIdAsc(gatheringId))
                 .thenReturn(List.of(leader, member));
-        when(todoRepository.findByGatheringIdOrderByWeekNumberAscCreatedAtAsc(gatheringId))
+        when(todoRepository.findByGatheringIdAndUserIdInOrderByWeekNumberAscCreatedAtAsc(
+                eq(gatheringId), anyCollection()))
                 .thenReturn(todos);
         when(objectMapper.writeValueAsString(anyList()))
                 .thenReturn("[{\"week\":1,\"rate\":50.0},{\"week\":2,\"rate\":75.0},{\"week\":3,\"rate\":75.0},{\"week\":4,\"rate\":75.0}]");
@@ -119,10 +122,11 @@ class GatheringReportServiceTest {
 
         assertThat(saved.getGatheringId()).isEqualTo(gatheringId);
         assertThat(saved.getTeamOverallRate()).isEqualByComparingTo("56.30");
-        assertThat(saved.getMvpUserId()).isEqualTo(100L);
-        assertThat(saved.getLongestStreakUserId()).isEqualTo(100L);
-        assertThat(saved.getMostImprovedUserId()).isEqualTo(200L);
-        assertThat(saved.getAttendanceUserId()).isEqualTo(100L);
+        assertThat(saved.getMvpUserIds()).containsExactly(100L);
+        assertThat(saved.getLongestStreakUserIds()).containsExactly(100L);
+        assertThat(saved.getLongestStreakValue()).isEqualTo(2);
+        assertThat(saved.getMostImprovedUserIds()).containsExactly(200L);
+        assertThat(saved.getAttendanceUserIds()).containsExactly(100L);
         assertThat(saved.getWeeklyRates()).isEqualTo(
                 "[{\"week\":1,\"rate\":50.0},{\"week\":2,\"rate\":75.0},{\"week\":3,\"rate\":75.0},{\"week\":4,\"rate\":75.0}]"
         );
@@ -177,10 +181,10 @@ class GatheringReportServiceTest {
         GatheringReport existing = GatheringReport.builder()
                 .gatheringId(gatheringId)
                 .teamOverallRate(new BigDecimal("80.00"))
-                .mvpUserId(100L)
-                .longestStreakUserId(100L)
-                .mostImprovedUserId(200L)
-                .attendanceUserId(100L)
+                .mvpUserIds(List.of(100L))
+                .longestStreakUserIds(List.of(100L))
+                .mostImprovedUserIds(List.of(200L))
+                .attendanceUserIds(List.of(100L))
                 .weeklyRates("[]")
                 .build();
 
@@ -194,6 +198,86 @@ class GatheringReportServiceTest {
                 .isEqualTo(ErrorCode.GATHERING_REPORT_ALREADY_EXISTS);
 
         verify(gatheringReportRepository, never()).save(any());
+    }
+
+    @Test
+    @DisplayName("아무도 완벽한 주차가 없으면 longestStreakUserIds가 비어야 한다")
+    void createReport_whenNoStreakExists_longestStreakIsEmpty() throws Exception {
+        // given
+        Long gatheringId = 1L;
+        Gathering gathering = completedGathering(gatheringId, 10L, "스트릭 없는 모임", 2);
+        GatheringMember leader = activeMember(gatheringId, 100L, GatheringRole.LEADER);
+        GatheringMember member = activeMember(gatheringId, 200L, GatheringRole.MEMBER);
+
+        List<Todo> todos = List.of(
+                // user 100 - week1: 50%, week2: 50%
+                todo(gatheringId, 100L, 1, true),
+                todo(gatheringId, 100L, 1, false),
+                todo(gatheringId, 100L, 2, true),
+                todo(gatheringId, 100L, 2, false),
+                // user 200 - week1: 50%, week2: 50%
+                todo(gatheringId, 200L, 1, true),
+                todo(gatheringId, 200L, 1, false),
+                todo(gatheringId, 200L, 2, true),
+                todo(gatheringId, 200L, 2, false)
+        );
+
+        when(gatheringRepository.findById(gatheringId)).thenReturn(Optional.of(gathering));
+        when(gatheringReportRepository.findByGatheringId(gatheringId)).thenReturn(Optional.empty());
+        when(gatheringMemberRepository.findByGatheringIdAndIsActiveTrueOrderByIdAsc(gatheringId))
+                .thenReturn(List.of(leader, member));
+        when(todoRepository.findByGatheringIdAndUserIdInOrderByWeekNumberAscCreatedAtAsc(
+                eq(gatheringId), anyCollection()))
+                .thenReturn(todos);
+        when(objectMapper.writeValueAsString(anyList())).thenReturn("[]");
+
+        // when
+        gatheringReportService.createReport(gatheringId);
+
+        // then
+        ArgumentCaptor<GatheringReport> captor = ArgumentCaptor.forClass(GatheringReport.class);
+        verify(gatheringReportRepository).save(captor.capture());
+        assertThat(captor.getValue().getLongestStreakUserIds()).isEmpty();
+    }
+
+    @Test
+    @DisplayName("모든 멤버의 달성률이 하락하면 mostImprovedUserIds가 비어야 한다")
+    void createReport_whenAllImprovementNegative_mostImprovedIsEmpty() throws Exception {
+        // given
+        Long gatheringId = 1L;
+        Gathering gathering = completedGathering(gatheringId, 10L, "하락 모임", 2);
+        GatheringMember leader = activeMember(gatheringId, 100L, GatheringRole.LEADER);
+        GatheringMember member = activeMember(gatheringId, 200L, GatheringRole.MEMBER);
+
+        List<Todo> todos = List.of(
+                // user 100 - week1: 100%, week2: 50% → improvement = -50
+                todo(gatheringId, 100L, 1, true),
+                todo(gatheringId, 100L, 1, true),
+                todo(gatheringId, 100L, 2, true),
+                todo(gatheringId, 100L, 2, false),
+                // user 200 - week1: 100%, week2: 50% → improvement = -50
+                todo(gatheringId, 200L, 1, true),
+                todo(gatheringId, 200L, 1, true),
+                todo(gatheringId, 200L, 2, true),
+                todo(gatheringId, 200L, 2, false)
+        );
+
+        when(gatheringRepository.findById(gatheringId)).thenReturn(Optional.of(gathering));
+        when(gatheringReportRepository.findByGatheringId(gatheringId)).thenReturn(Optional.empty());
+        when(gatheringMemberRepository.findByGatheringIdAndIsActiveTrueOrderByIdAsc(gatheringId))
+                .thenReturn(List.of(leader, member));
+        when(todoRepository.findByGatheringIdAndUserIdInOrderByWeekNumberAscCreatedAtAsc(
+                eq(gatheringId), anyCollection()))
+                .thenReturn(todos);
+        when(objectMapper.writeValueAsString(anyList())).thenReturn("[]");
+
+        // when
+        gatheringReportService.createReport(gatheringId);
+
+        // then
+        ArgumentCaptor<GatheringReport> captor = ArgumentCaptor.forClass(GatheringReport.class);
+        verify(gatheringReportRepository).save(captor.capture());
+        assertThat(captor.getValue().getMostImprovedUserIds()).isEmpty();
     }
 
     @Test
@@ -214,7 +298,8 @@ class GatheringReportServiceTest {
         when(gatheringReportRepository.findByGatheringId(gatheringId)).thenReturn(Optional.empty());
         when(gatheringMemberRepository.findByGatheringIdAndIsActiveTrueOrderByIdAsc(gatheringId))
                 .thenReturn(List.of(leader));
-        when(todoRepository.findByGatheringIdOrderByWeekNumberAscCreatedAtAsc(gatheringId))
+        when(todoRepository.findByGatheringIdAndUserIdInOrderByWeekNumberAscCreatedAtAsc(
+                eq(gatheringId), anyCollection()))
                 .thenReturn(todos);
         when(objectMapper.writeValueAsString(anyList()))
                 .thenThrow(new JsonProcessingException("serialize fail") {});

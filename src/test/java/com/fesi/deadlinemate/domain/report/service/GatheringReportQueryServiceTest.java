@@ -3,6 +3,8 @@ package com.fesi.deadlinemate.domain.report.service;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.ArgumentMatchers.anyCollection;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.when;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -75,10 +77,11 @@ class GatheringReportQueryServiceTest {
         GatheringReport report = GatheringReport.builder()
                 .gatheringId(gatheringId)
                 .teamOverallRate(new BigDecimal("78.50"))
-                .mvpUserId(100L)
-                .longestStreakUserId(100L)
-                .mostImprovedUserId(200L)
-                .attendanceUserId(100L)
+                .mvpUserIds(List.of(100L))
+                .longestStreakUserIds(List.of(100L))
+                .longestStreakValue(2)
+                .mostImprovedUserIds(List.of(200L))
+                .attendanceUserIds(List.of(100L))
                 .weeklyRates("""
                         [
                           {"week":1,"rate":90.0},
@@ -120,7 +123,8 @@ class GatheringReportQueryServiceTest {
         when(gatheringReportRepository.findByGatheringId(gatheringId)).thenReturn(Optional.of(report));
         when(gatheringMemberRepository.findByGatheringIdAndIsActiveTrueOrderByIdAsc(gatheringId))
                 .thenReturn(List.of(leader, member));
-        when(todoRepository.findByGatheringIdOrderByWeekNumberAscCreatedAtAsc(gatheringId))
+        when(todoRepository.findByGatheringIdAndUserIdInOrderByWeekNumberAscCreatedAtAsc(
+                eq(gatheringId), anyCollection()))
                 .thenReturn(todos);
 
         when(userClient.findById(100L)).thenReturn(userInfo(100L, "마감왕", "leader.png"));
@@ -169,18 +173,22 @@ class GatheringReportQueryServiceTest {
         assertThat(memberResult.completedTodos()).isEqualTo(3);
         assertThat(memberResult.totalTodos()).isEqualTo(8);
 
-        assertThat(response.awards().mvp().userId()).isEqualTo(100L);
-        assertThat(response.awards().mvp().nickname()).isEqualTo("마감왕");
+        assertThat(response.awards().mvp()).hasSize(1);
+        assertThat(response.awards().mvp().get(0).userId()).isEqualTo(100L);
+        assertThat(response.awards().mvp().get(0).nickname()).isEqualTo("마감왕");
 
-        assertThat(response.awards().longestStreak().userId()).isEqualTo(100L);
-        assertThat(response.awards().longestStreak().nickname()).isEqualTo("마감왕");
-        assertThat(response.awards().longestStreak().streak()).isEqualTo(2);
+        assertThat(response.awards().longestStreak()).hasSize(1);
+        assertThat(response.awards().longestStreak().get(0).userId()).isEqualTo(100L);
+        assertThat(response.awards().longestStreak().get(0).nickname()).isEqualTo("마감왕");
+        assertThat(response.awards().longestStreak().get(0).streak()).isEqualTo(2);
 
-        assertThat(response.awards().mostImproved().userId()).isEqualTo(200L);
-        assertThat(response.awards().mostImproved().nickname()).isEqualTo("성장맨");
+        assertThat(response.awards().mostImproved()).hasSize(1);
+        assertThat(response.awards().mostImproved().get(0).userId()).isEqualTo(200L);
+        assertThat(response.awards().mostImproved().get(0).nickname()).isEqualTo("성장맨");
 
-        assertThat(response.awards().attendance().userId()).isEqualTo(100L);
-        assertThat(response.awards().attendance().nickname()).isEqualTo("마감왕");
+        assertThat(response.awards().attendance()).hasSize(1);
+        assertThat(response.awards().attendance().get(0).userId()).isEqualTo(100L);
+        assertThat(response.awards().attendance().get(0).nickname()).isEqualTo("마감왕");
     }
 
     @Test
@@ -252,10 +260,11 @@ class GatheringReportQueryServiceTest {
         GatheringReport report = GatheringReport.builder()
                 .gatheringId(gatheringId)
                 .teamOverallRate(new BigDecimal("80.00"))
-                .mvpUserId(100L)
-                .longestStreakUserId(100L)
-                .mostImprovedUserId(100L)
-                .attendanceUserId(100L)
+                .mvpUserIds(List.of(100L))
+                .longestStreakUserIds(List.of(100L))
+                .longestStreakValue(0)
+                .mostImprovedUserIds(List.of(100L))
+                .attendanceUserIds(List.of(100L))
                 .weeklyRates("invalid-json")
                 .build();
 
@@ -267,7 +276,8 @@ class GatheringReportQueryServiceTest {
         when(gatheringReportRepository.findByGatheringId(gatheringId)).thenReturn(Optional.of(report));
         when(gatheringMemberRepository.findByGatheringIdAndIsActiveTrueOrderByIdAsc(gatheringId))
                 .thenReturn(List.of(leader));
-        when(todoRepository.findByGatheringIdOrderByWeekNumberAscCreatedAtAsc(gatheringId))
+        when(todoRepository.findByGatheringIdAndUserIdInOrderByWeekNumberAscCreatedAtAsc(
+                eq(gatheringId), anyCollection()))
                 .thenReturn(List.of(todo(gatheringId, 100L, 1, true)));
         when(userClient.findById(100L)).thenReturn(userInfo(100L, "마감왕", "leader.png"));
 

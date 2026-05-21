@@ -32,6 +32,7 @@ import com.fesi.deadlinemate.domain.user.client.UserClient;
 import com.fesi.deadlinemate.global.common.ImageStorageService;
 import com.fesi.deadlinemate.global.error.BusinessException;
 import com.fesi.deadlinemate.global.error.ErrorCode;
+import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
@@ -135,9 +136,9 @@ public class GatheringService {
         gatheringLikeRepository.deleteByGatheringId(gatheringId);
 
         List<String> imageUrls = gatheringImageRepository
-                .findByGatheringIdOrderByDisplayOrderAsc(gatheringId)
+                .findImageRowsByGatheringId(gatheringId)
                 .stream()
-                .map(GatheringImage::getImageUrl)
+                .map(image -> image.getImageUrl())
                 .toList();
         gatheringImageRepository.deleteByGatheringId(gatheringId);
         imageUrls.forEach(imageStorageService::delete);
@@ -415,8 +416,8 @@ public class GatheringService {
 
     private void replaceImages(Long gatheringId, List<String> imageUrls) {
         List<String> existingImageUrls = gatheringImageRepository
-                .findByGatheringIdOrderByDisplayOrderAsc(gatheringId).stream()
-                .map(GatheringImage::getImageUrl)
+                .findImageRowsByGatheringId(gatheringId).stream()
+                .map(image -> image.getImageUrl())
                 .toList();
 
         List<String> finalImageUrls = imageUrls == null ? List.of() : imageUrls;
@@ -481,9 +482,7 @@ public class GatheringService {
     }
 
     private List<String> findTags(Long gatheringId) {
-        return gatheringTagRepository.findByGatheringIdOrderByIdAsc(gatheringId).stream()
-                .map(GatheringTag::getTag)
-                .toList();
+        return gatheringTagRepository.findTagsByGatheringId(gatheringId);
     }
 
     private void saveWeeklyPlansFromCreate(
@@ -648,6 +647,7 @@ public class GatheringService {
                 .role(GatheringRole.LEADER)
                 .personalGoal(null)
                 .isActive(true)
+                .overallAchievementRate(BigDecimal.ZERO)
                 .build();
 
         gatheringMemberRepository.save(leaderMember);

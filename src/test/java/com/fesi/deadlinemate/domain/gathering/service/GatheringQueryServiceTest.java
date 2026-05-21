@@ -6,6 +6,8 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyList;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
 
 import com.fesi.deadlinemate.domain.category.entity.Category;
 import com.fesi.deadlinemate.domain.category.entity.GatheringCategory;
@@ -18,7 +20,6 @@ import com.fesi.deadlinemate.domain.gathering.dto.response.GatheringMainResponse
 import com.fesi.deadlinemate.domain.gathering.entity.GatheringMember;
 import com.fesi.deadlinemate.domain.gathering.entity.GatheringRole;
 import com.fesi.deadlinemate.domain.gathering.entity.GatheringStatus;
-import com.fesi.deadlinemate.domain.gathering.entity.GatheringTag;
 import com.fesi.deadlinemate.domain.gathering.entity.GatheringType;
 import com.fesi.deadlinemate.domain.gathering.entity.WeeklyPlan;
 import com.fesi.deadlinemate.domain.gathering.projection.GatheringDetailRow;
@@ -123,6 +124,40 @@ class GatheringQueryServiceTest {
             assertThat(response.deadline()).isEmpty();
             assertThat(response.latest()).isEmpty();
         }
+
+        @Test
+        @DisplayName("3개 섹션 모두에 데이터가 있을 때 배치 쿼리가 1회만 실행된다")
+        void fetchesRelatedDataOnceForAllSections() {
+            GatheringListRow row1 = sampleRow(1L, 10L);
+            GatheringListRow row2 = sampleRow(2L, 20L);
+            GatheringListRow row3 = sampleRow(3L, 30L);
+            given(gatheringRepository.findMainPopular(5)).willReturn(List.of(row1));
+            given(gatheringRepository.findMainDeadline(5)).willReturn(List.of(row2));
+            given(gatheringRepository.findMainLatest(5)).willReturn(List.of(row3));
+
+            List<Long> allIds = List.of(1L, 2L, 3L);
+            given(gatheringTagRepository.findTagRowsByGatheringIdIn(allIds))
+                    .willReturn(List.of());
+            given(gatheringCategoryRepository.findByGatheringIdIn(allIds))
+                    .willReturn(List.of());
+            given(categoryRepository.findByIdIn(anyList())).willReturn(List.of());
+            given(userClient.findByIds(anyList())).willReturn(Map.of(
+                    10L, UserInfo.builder().id(10L).nickname("리더1").profileImage(null).build(),
+                    20L, UserInfo.builder().id(20L).nickname("리더2").profileImage(null).build(),
+                    30L, UserInfo.builder().id(30L).nickname("리더3").profileImage(null).build()
+            ));
+
+            GatheringMainResponse response = gatheringQueryService.getMainGatherings(5);
+
+            assertThat(response.popular()).hasSize(1);
+            assertThat(response.deadline()).hasSize(1);
+            assertThat(response.latest()).hasSize(1);
+            verify(gatheringTagRepository, times(1))
+                    .findTagRowsByGatheringIdIn(allIds);
+            verify(gatheringCategoryRepository, times(1))
+                    .findByGatheringIdIn(allIds);
+            verify(userClient, times(1)).findByIds(anyList());
+        }
     }
 
     @Nested
@@ -180,10 +215,8 @@ class GatheringQueryServiceTest {
             setField(cat, "id", 1L);
             given(categoryRepository.findByIdIn(List.of(1L))).willReturn(List.of(cat));
 
-            given(gatheringTagRepository.findByGatheringIdOrderByIdAsc(10L))
-                    .willReturn(List.of(GatheringTag.builder().gatheringId(10L).tag("React").build()));
-            given(gatheringImageRepository.findByGatheringIdOrderByDisplayOrderAsc(10L))
-                    .willReturn(List.of());
+            given(gatheringTagRepository.findTagsByGatheringId(10L)).willReturn(List.of("React"));
+            given(gatheringImageRepository.findImageRowsByGatheringId(10L)).willReturn(List.of());
 
             WeeklyPlan plan = WeeklyPlan.builder()
                     .gatheringId(10L).weekNumber(1).title("1주차")
@@ -246,7 +279,7 @@ class GatheringQueryServiceTest {
      * gatheringIds 리스트에 아이템이 있을 때 호출되는 tag/category/user 레포 스텁을 설정한다.
      */
     private void mockListHelperDeps(List<Long> gatheringIds, Long leaderId) {
-        given(gatheringTagRepository.findByGatheringIdInOrderByGatheringIdAscIdAsc(gatheringIds))
+        given(gatheringTagRepository.findTagRowsByGatheringIdIn(gatheringIds))
                 .willReturn(List.of());
         given(gatheringCategoryRepository.findByGatheringIdIn(gatheringIds))
                 .willReturn(List.of());

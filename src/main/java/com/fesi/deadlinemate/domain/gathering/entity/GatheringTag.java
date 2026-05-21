@@ -9,6 +9,7 @@ import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
+import jakarta.persistence.Index;
 import jakarta.persistence.Table;
 import lombok.AccessLevel;
 import lombok.Builder;
@@ -16,7 +17,10 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 
 @Entity
-@Table(name = "gathering_tags")
+@Table(name = "gathering_tags",
+        indexes = {
+                @Index(name = "idx_gathering_tags_gathering_id", columnList = "gatheringId")
+        })
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class GatheringTag extends BaseTimeEntity {

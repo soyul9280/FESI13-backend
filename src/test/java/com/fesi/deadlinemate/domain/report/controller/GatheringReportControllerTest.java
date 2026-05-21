@@ -65,7 +65,7 @@ class GatheringReportControllerTest {
                     .andExpect(jsonPath("$.data.gathering.title").value("React 완전 정복 스터디"))
                     .andExpect(jsonPath("$.data.teamOverallRate").value(82.5))
                     .andExpect(jsonPath("$.data.memberResults[0].userId").value(1))
-                    .andExpect(jsonPath("$.data.awards.mvp.nickname").value("모임장"));
+                    .andExpect(jsonPath("$.data.awards.mvp[0].nickname").value("모임장"));
         }
 
         @Test
@@ -109,23 +109,23 @@ class GatheringReportControllerTest {
                                 .build()
                 ))
                 .awards(GatheringReportResponse.AwardsResponse.builder()
-                        .mvp(GatheringReportResponse.UserAwardResponse.builder()
+                        .mvp(List.of(GatheringReportResponse.UserAwardResponse.builder()
                                 .userId(1L)
                                 .nickname("모임장")
-                                .build())
-                        .longestStreak(GatheringReportResponse.StreakAwardResponse.builder()
+                                .build()))
+                        .longestStreak(List.of(GatheringReportResponse.StreakAwardResponse.builder()
                                 .userId(1L)
                                 .nickname("모임장")
                                 .streak(2)
-                                .build())
-                        .mostImproved(GatheringReportResponse.UserAwardResponse.builder()
+                                .build()))
+                        .mostImproved(List.of(GatheringReportResponse.UserAwardResponse.builder()
                                 .userId(2L)
                                 .nickname("멤버")
-                                .build())
-                        .attendance(GatheringReportResponse.UserAwardResponse.builder()
+                                .build()))
+                        .attendance(List.of(GatheringReportResponse.UserAwardResponse.builder()
                                 .userId(1L)
                                 .nickname("모임장")
-                                .build())
+                                .build()))
                         .build())
                 .build();
     }

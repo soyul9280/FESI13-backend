@@ -3,6 +3,8 @@ package com.fesi.deadlinemate.domain.achievement.service;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.ArgumentMatchers.anyCollection;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -27,7 +29,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
-class AchievementServiceTest {
+class AchievementQueryServiceTest {
 
     @Mock
     private GatheringRepository gatheringRepository;
@@ -42,7 +44,7 @@ class AchievementServiceTest {
     private UserClient userClient;
 
     @InjectMocks
-    private AchievementService achievementService;
+    private AchievementQueryService achievementQueryService;
 
     private final Long GATHERING_ID = 1L;
     private final Long USER_ID_1 = 10L;
@@ -81,7 +83,8 @@ class AchievementServiceTest {
         when(todo2.getWeekNumber()).thenReturn(1);
         when(todo2.isCompleted()).thenReturn(false);
 
-        when(todoRepository.findByGatheringIdOrderByWeekNumberAscCreatedAtAsc(GATHERING_ID))
+        when(todoRepository.findByGatheringIdAndUserIdInOrderByWeekNumberAscCreatedAtAsc(
+                eq(GATHERING_ID), anyCollection()))
                 .thenReturn(List.of(todo1, todo2));
 
         UserInfo user1 = mock(UserInfo.class);
@@ -95,7 +98,7 @@ class AchievementServiceTest {
 
         // when
         AchievementResponse response =
-                achievementService.getAchievements(GATHERING_ID, USER_ID_1);
+                achievementQueryService.getAchievements(GATHERING_ID, USER_ID_1);
 
         // then
         assertThat(response.members()).hasSize(2);
@@ -114,7 +117,7 @@ class AchievementServiceTest {
 
         // when & then
         assertThatThrownBy(() ->
-                achievementService.getAchievements(GATHERING_ID, USER_ID_1))
+                achievementQueryService.getAchievements(GATHERING_ID, USER_ID_1))
                 .isInstanceOf(BusinessException.class);
     }
 }

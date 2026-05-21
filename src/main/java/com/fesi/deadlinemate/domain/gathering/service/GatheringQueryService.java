@@ -8,7 +8,6 @@ import com.fesi.deadlinemate.domain.gathering.dto.response.GatheringListItemResp
 import com.fesi.deadlinemate.domain.gathering.dto.response.GatheringListResponse;
 import com.fesi.deadlinemate.domain.gathering.dto.response.GatheringMainResponse;
 import com.fesi.deadlinemate.domain.gathering.entity.GatheringMember;
-import com.fesi.deadlinemate.domain.gathering.entity.GatheringTag;
 import com.fesi.deadlinemate.domain.gathering.entity.WeeklyPlan;
 import com.fesi.deadlinemate.domain.gathering.entity.WeeklyPlanDetail;
 import com.fesi.deadlinemate.domain.gathering.projection.GatheringDetailRow;
@@ -31,6 +30,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -74,16 +74,25 @@ public class GatheringQueryService {
     public GatheringMainResponse getMainGatherings(int limit) {
         int validatedLimit = Math.max(limit, 1);
 
-        List<GatheringListItemResponse> popular =
-                toListItemResponses(gatheringRepository.findMainPopular(validatedLimit));
+        List<GatheringListRow> popularRows  = gatheringRepository.findMainPopular(validatedLimit);
+        List<GatheringListRow> deadlineRows = gatheringRepository.findMainDeadline(validatedLimit);
+        List<GatheringListRow> latestRows   = gatheringRepository.findMainLatest(validatedLimit);
 
-        List<GatheringListItemResponse> deadline =
-                toListItemResponses(gatheringRepository.findMainDeadline(validatedLimit));
+        List<GatheringListRow> allRows = Stream.of(popularRows, deadlineRows, latestRows)
+                .flatMap(List::stream)
+                .toList();
 
-        List<GatheringListItemResponse> latest =
-                toListItemResponses(gatheringRepository.findMainLatest(validatedLimit));
+        if (allRows.isEmpty()) {
+            return GatheringMainResponse.of(List.of(), List.of(), List.of());
+        }
 
-        return GatheringMainResponse.of(popular, deadline, latest);
+        RelatedData data = fetchRelatedData(allRows);
+
+        return GatheringMainResponse.of(
+                assembleResponses(popularRows,  data),
+                assembleResponses(deadlineRows, data),
+                assembleResponses(latestRows,   data)
+        );
     }
 
     public GatheringListResponse getMyLikedGatherings(Long userId, int page, int limit) {
@@ -111,12 +120,10 @@ public class GatheringQueryService {
 
         List<String> categories = findCategoryNamesByGatheringId(gatheringId);
 
-        List<String> tags = gatheringTagRepository.findByGatheringIdOrderByIdAsc(gatheringId).stream()
-                .map(GatheringTag::getTag)
-                .toList();
+        List<String> tags = gatheringTagRepository.findTagsByGatheringId(gatheringId);
 
         List<GatheringDetailResponse.ImageResponse> images = gatheringImageRepository
-                .findByGatheringIdOrderByDisplayOrderAsc(gatheringId).stream()
+                .findImageRowsByGatheringId(gatheringId).stream()
                 .map(image -> GatheringDetailResponse.ImageResponse.builder()
                         .url(image.getImageUrl())
                         .displayOrder(image.getDisplayOrder())
@@ -196,26 +203,30 @@ public class GatheringQueryService {
                 .build();
     }
 
-    private List<GatheringListItemResponse> toListItemResponses(List<GatheringListRow> rows) {
-        if (rows.isEmpty()) {
-            return List.of();
-        }
+    private record RelatedData(
+            Map<Long, List<String>> tagsMap,
+            Map<Long, List<String>> imageUrlsMap,
+            Map<Long, List<String>> categoryMap,
+            Map<Long, UserInfo> leaderMap
+    ) {}
 
+    private RelatedData fetchRelatedData(List<GatheringListRow> rows) {
         List<Long> gatheringIds = rows.stream()
                 .map(GatheringListRow::id)
+                .distinct()
                 .toList();
 
         Map<Long, List<String>> tagsMap = gatheringTagRepository
-                .findByGatheringIdInOrderByGatheringIdAscIdAsc(gatheringIds)
+                .findTagRowsByGatheringIdIn(gatheringIds)
                 .stream()
                 .collect(Collectors.groupingBy(
-                        GatheringTag::getGatheringId,
+                        row -> row.getGatheringId(),
                         LinkedHashMap::new,
-                        Collectors.mapping(GatheringTag::getTag, Collectors.toList())
+                        Collectors.mapping(row -> row.getTag(), Collectors.toList())
                 ));
 
         Map<Long, List<String>> imageUrlsMap = gatheringImageRepository
-                .findByGatheringIdInOrderByGatheringIdAscDisplayOrderAsc(gatheringIds)
+                .findImageRowsByGatheringIdIn(gatheringIds)
                 .stream()
                 .collect(Collectors.groupingBy(
                         image -> image.getGatheringId(),
@@ -229,18 +240,23 @@ public class GatheringQueryService {
                 rows.stream().map(GatheringListRow::leaderId).distinct().toList()
         );
 
+        return new RelatedData(tagsMap, imageUrlsMap, categoryMap, leaderMap);
+    }
+
+    private List<GatheringListItemResponse> assembleResponses(
+            List<GatheringListRow> rows, RelatedData data) {
         return rows.stream()
                 .map(row -> {
-                    UserInfo leader = leaderMap.get(row.leaderId());
+                    UserInfo leader = data.leaderMap().get(row.leaderId());
 
                     return GatheringListItemResponse.builder()
                             .id(row.id())
                             .type(row.type().getDisplayName())
-                            .categories(categoryMap.getOrDefault(row.id(), List.of()))
+                            .categories(data.categoryMap().getOrDefault(row.id(), List.of()))
                             .title(row.title())
                             .shortDescription(row.shortDescription())
-                            .imageUrls(imageUrlsMap.getOrDefault(row.id(), List.of()))
-                            .tags(tagsMap.getOrDefault(row.id(), List.of()))
+                            .imageUrls(data.imageUrlsMap().getOrDefault(row.id(), List.of()))
+                            .tags(data.tagsMap().getOrDefault(row.id(), List.of()))
                             .maxMembers(row.maxMembers())
                             .currentMembers(row.currentMembers())
                             .recruitDeadline(row.recruitDeadline())
@@ -255,6 +271,13 @@ public class GatheringQueryService {
                             .build();
                 })
                 .toList();
+    }
+
+    private List<GatheringListItemResponse> toListItemResponses(List<GatheringListRow> rows) {
+        if (rows.isEmpty()) {
+            return List.of();
+        }
+        return assembleResponses(rows, fetchRelatedData(rows));
     }
 
     private Map<Long, List<String>> buildCategoryMap(List<Long> gatheringIds) {

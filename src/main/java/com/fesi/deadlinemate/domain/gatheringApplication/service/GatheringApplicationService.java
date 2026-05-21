@@ -24,6 +24,7 @@ import com.fesi.deadlinemate.domain.user.client.UserClient;
 import com.fesi.deadlinemate.domain.user.client.dto.UserInfo;
 import com.fesi.deadlinemate.global.error.BusinessException;
 import com.fesi.deadlinemate.global.error.ErrorCode;
+import java.math.BigDecimal;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -256,6 +257,7 @@ public class GatheringApplicationService {
                 .role(GatheringRole.MEMBER)
                 .personalGoal(application.getPersonalGoal())
                 .isActive(true)
+                .overallAchievementRate(BigDecimal.ZERO)
                 .build();
 
         try {
@@ -264,6 +266,38 @@ public class GatheringApplicationService {
             throw new BusinessException(ErrorCode.ALREADY_GATHERING_MEMBER);
         }
         gathering.increaseCurrentMembers();
+
+        if (gathering.getCurrentMembers() >= gathering.getMaxMembers()) {
+            autoRejectRemainingPending(gathering, application.getId());
+        }
+    }
+
+    private void autoRejectRemainingPending(Gathering gathering, Long acceptedApplicationId) {
+        List<GatheringApplication> pendingApplications = gatheringApplicationRepository
+                .findByGatheringIdAndStatusAndIdNot(
+                        gathering.getId(), ApplicationStatus.PENDING, acceptedApplicationId);
+
+        if (pendingApplications.isEmpty()) {
+            return;
+        }
+
+        gatheringApplicationRepository.rejectAllPendingExcept(
+                gathering.getId(),
+                acceptedApplicationId,
+                ApplicationStatus.PENDING,
+                ApplicationStatus.REJECTED
+        );
+
+        for (GatheringApplication pending : pendingApplications) {
+            eventPublisher.publishEvent(new GatheringApplicationUpdatedEvent(
+                    pending.getId(),
+                    gathering.getId(),
+                    pending.getApplicantId(),
+                    gathering.getLeaderId(),
+                    gathering.getTitle(),
+                    ApplicationStatus.REJECTED
+            ));
+        }
     }
 
     private void rejectApplication(GatheringApplication application) {

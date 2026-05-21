@@ -8,6 +8,7 @@ import java.util.Map;
 import java.util.Optional;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Lock;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
@@ -33,4 +34,22 @@ public interface GatheringApplicationRepository extends JpaRepository<GatheringA
 
     @Query("SELECT ga.gatheringId, COUNT(ga) FROM GatheringApplication ga WHERE ga.gatheringId IN :gatheringIds AND ga.status = :status GROUP BY ga.gatheringId")
     List<Object[]> countByGatheringIdInAndStatus(@Param("gatheringIds") List<Long> gatheringIds, @Param("status") ApplicationStatus status);
+
+    List<GatheringApplication> findByGatheringIdAndStatusAndIdNot(
+            Long gatheringId, ApplicationStatus status, Long excludeId);
+
+    @Modifying(flushAutomatically = true, clearAutomatically = true)
+    @Query("""
+        UPDATE GatheringApplication ga
+        SET ga.status = :rejected
+        WHERE ga.gatheringId = :gatheringId
+          AND ga.status = :pending
+          AND ga.id <> :acceptedApplicationId
+    """)
+    int rejectAllPendingExcept(
+            @Param("gatheringId") Long gatheringId,
+            @Param("acceptedApplicationId") Long acceptedApplicationId,
+            @Param("pending") ApplicationStatus pending,
+            @Param("rejected") ApplicationStatus rejected
+    );
 }

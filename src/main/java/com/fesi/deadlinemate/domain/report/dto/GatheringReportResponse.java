@@ -42,12 +42,13 @@ public record GatheringReportResponse(
 
     @Builder
     public record AwardsResponse(
-            UserAwardResponse mvp,
-            StreakAwardResponse longestStreak,
-            UserAwardResponse mostImproved,
-            UserAwardResponse attendance
+            List<UserAwardResponse> mvp,
+            List<StreakAwardResponse> longestStreak,
+            List<UserAwardResponse> mostImproved,
+            List<UserAwardResponse> attendance
     ) {
     }
+
 
     @Builder
     public record UserAwardResponse(

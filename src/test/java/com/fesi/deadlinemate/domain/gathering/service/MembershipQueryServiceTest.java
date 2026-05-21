@@ -55,7 +55,6 @@ class MembershipQueryServiceTest {
     @Mock private GatheringCategoryRepository gatheringCategoryRepository;
     @Mock private CategoryRepository categoryRepository;
     @Mock private UserClient userClient;
-    @Mock private TodoRepository todoRepository;
 
     @InjectMocks
     private MembershipQueryService membershipQueryService;
@@ -79,7 +78,7 @@ class MembershipQueryServiceTest {
         @DisplayName("참여 중인 모임 목록과 역할을 반환한다")
         void getMyGatherings() {
             Gathering gathering = gathering(1L, 3);
-            GatheringMember member = member(1L, 1L, 10L, GatheringRole.MEMBER);
+            GatheringMember member = member(1L, 1L, 10L, GatheringRole.MEMBER,"0.0");
 
             Category category = Category.builder().name("개발").build();
             setField(category, "id", 100L);
@@ -94,13 +93,13 @@ class MembershipQueryServiceTest {
                     .willReturn(new PageImpl<>(List.of(gathering)));
             given(gatheringMemberRepository.findByGatheringIdInAndUserIdAndIsActiveTrue(List.of(1L), 10L))
                     .willReturn(List.of(member));
-            given(gatheringTagRepository.findByGatheringIdInOrderByGatheringIdAscIdAsc(any(Collection.class)))
+            given(gatheringTagRepository.findTagRowsByGatheringIdIn(any(Collection.class)))
                     .willReturn(List.of());
             given(gatheringCategoryRepository.findByGatheringIdIn(List.of(1L)))
                     .willReturn(List.of(mapping));
             given(categoryRepository.findByIdIn(List.of(100L)))
                     .willReturn(List.of(category));
-            given(reviewRepository.findReviewedGatheringIds(any(), any())).willReturn(List.of());
+            given(reviewRepository.countReviewedMembersGroupByGathering(any(), any())).willReturn(List.of());
             given(gatheringApplicationRepository.countByGatheringIdInAndStatus(any(), any())).willReturn(List.of());
 
             MyGatheringListResponse response = membershipQueryService.getMyGatherings(10L, "all", "latest", 1, 12);
@@ -116,17 +115,17 @@ class MembershipQueryServiceTest {
         @DisplayName("sort=oldest이면 오름차순으로 조회한다")
         void getMyGatheringsOldest() {
             Gathering gathering = gathering(1L, 3);
-            GatheringMember member = member(1L, 1L, 10L, GatheringRole.MEMBER);
+            GatheringMember member = member(1L, 1L, 10L, GatheringRole.MEMBER,"0.0");
 
             given(gatheringMemberRepository.findActiveGatheringIdsByUserId(10L)).willReturn(List.of(1L));
             given(gatheringRepository.findByIdInOrderByCreatedAtAsc(any(), any(Pageable.class)))
                     .willReturn(new PageImpl<>(List.of(gathering)));
             given(gatheringMemberRepository.findByGatheringIdInAndUserIdAndIsActiveTrue(List.of(1L), 10L))
                     .willReturn(List.of(member));
-            given(gatheringTagRepository.findByGatheringIdInOrderByGatheringIdAscIdAsc(any(Collection.class)))
+            given(gatheringTagRepository.findTagRowsByGatheringIdIn(any(Collection.class)))
                     .willReturn(List.of());
             given(gatheringCategoryRepository.findByGatheringIdIn(any())).willReturn(List.of());
-            given(reviewRepository.findReviewedGatheringIds(any(), any())).willReturn(List.of());
+            given(reviewRepository.countReviewedMembersGroupByGathering(any(), any())).willReturn(List.of());
             given(gatheringApplicationRepository.countByGatheringIdInAndStatus(any(), any())).willReturn(List.of());
 
             MyGatheringListResponse response = membershipQueryService.getMyGatherings(10L, "all", "oldest", 1, 12);
@@ -138,17 +137,17 @@ class MembershipQueryServiceTest {
         @DisplayName("LEADER인 모임은 pendingApplicationCount를 반환한다")
         void leaderGetsPendingCount() {
             Gathering gathering = gathering(1L, 3);
-            GatheringMember member = member(1L, 1L, 10L, GatheringRole.LEADER);
+            GatheringMember member = member(1L, 1L, 10L, GatheringRole.LEADER,"0.0");
 
             given(gatheringMemberRepository.findActiveGatheringIdsByUserId(10L)).willReturn(List.of(1L));
             given(gatheringRepository.findByIdInOrderByCreatedAtDesc(any(), any(Pageable.class)))
                     .willReturn(new PageImpl<>(List.of(gathering)));
             given(gatheringMemberRepository.findByGatheringIdInAndUserIdAndIsActiveTrue(List.of(1L), 10L))
                     .willReturn(List.of(member));
-            given(gatheringTagRepository.findByGatheringIdInOrderByGatheringIdAscIdAsc(any(Collection.class)))
+            given(gatheringTagRepository.findTagRowsByGatheringIdIn(any(Collection.class)))
                     .willReturn(List.of());
             given(gatheringCategoryRepository.findByGatheringIdIn(any())).willReturn(List.of());
-            given(reviewRepository.findReviewedGatheringIds(any(), any())).willReturn(List.of());
+            given(reviewRepository.countReviewedMembersGroupByGathering(any(), any())).willReturn(List.of());
             List<Object[]> pendingCounts = new ArrayList<>();
             pendingCounts.add(new Object[]{1L, 3L});
             given(gatheringApplicationRepository.countByGatheringIdInAndStatus(List.of(1L), ApplicationStatus.PENDING))
@@ -163,22 +162,27 @@ class MembershipQueryServiceTest {
         @DisplayName("리뷰를 작성한 모임은 hasReviewed가 true이다")
         void hasReviewedTrue() {
             Gathering gathering = gathering(1L, 3);
-            GatheringMember member = member(1L, 1L, 10L, GatheringRole.MEMBER);
+            GatheringMember member = member(1L, 1L, 10L, GatheringRole.MEMBER,"0.0");
 
             given(gatheringMemberRepository.findActiveGatheringIdsByUserId(10L)).willReturn(List.of(1L));
             given(gatheringRepository.findByIdInOrderByCreatedAtDesc(any(), any(Pageable.class)))
                     .willReturn(new PageImpl<>(List.of(gathering)));
             given(gatheringMemberRepository.findByGatheringIdInAndUserIdAndIsActiveTrue(List.of(1L), 10L))
                     .willReturn(List.of(member));
-            given(gatheringTagRepository.findByGatheringIdInOrderByGatheringIdAscIdAsc(any(Collection.class)))
+            given(gatheringTagRepository.findTagRowsByGatheringIdIn(any(Collection.class)))
                     .willReturn(List.of());
             given(gatheringCategoryRepository.findByGatheringIdIn(any())).willReturn(List.of());
-            given(reviewRepository.findReviewedGatheringIds(10L, List.of(1L))).willReturn(List.of(1L));
+            ReviewRepository.ReviewCountRow row = new ReviewRepository.ReviewCountRow() {
+                @Override public Long getGatheringId() { return 1L; }
+                @Override public Long getCount() { return 1L; }
+            };
+            given(reviewRepository.countReviewedMembersGroupByGathering(10L, List.of(1L))).willReturn(List.of(row));
             given(gatheringApplicationRepository.countByGatheringIdInAndStatus(any(), any())).willReturn(List.of());
 
             MyGatheringListResponse response = membershipQueryService.getMyGatherings(10L, "all", "latest", 1, 12);
 
             assertThat(response.gatherings().get(0).hasReviewed()).isTrue();
+            assertThat(response.gatherings().get(0).reviewedMembersCount()).isEqualTo(1);
         }
     }
 
@@ -189,14 +193,12 @@ class MembershipQueryServiceTest {
         @Test
         @DisplayName("배치로 유저 정보를 조회하여 멤버 목록을 반환한다")
         void getMembers() {
-            GatheringMember member = member(1L, 1L, 10L, GatheringRole.LEADER);
+            GatheringMember member = member(1L, 1L, 10L, GatheringRole.LEADER,"100.0");
             given(gatheringMemberRepository.existsByGatheringIdAndUserIdAndIsActiveTrue(1L, 10L)).willReturn(true);
             given(gatheringMemberRepository.findByGatheringIdAndIsActiveTrueOrderByIdAsc(1L))
                     .willReturn(List.of(member));
             given(userClient.findByIds(List.of(10L))).willReturn(
                     Map.of(10L, UserInfo.builder().id(10L).nickname("leader").build()));
-            given(todoRepository.countByGatheringIdAndUserId(1L, 10L)).willReturn(4L);
-            given(todoRepository.countByGatheringIdAndUserIdAndIsCompletedTrue(1L, 10L)).willReturn(4L);
 
             MemberListResponse response = membershipQueryService.getMembers(1L, 10L);
 
@@ -208,13 +210,12 @@ class MembershipQueryServiceTest {
         @Test
         @DisplayName("할 일이 없는 멤버는 달성률 0.0%를 반환한다")
         void getMembersWithNoTodos() {
-            GatheringMember member = member(1L, 1L, 10L, GatheringRole.MEMBER);
+            GatheringMember member = member(1L, 1L, 10L, GatheringRole.MEMBER,"0.0");
             given(gatheringMemberRepository.existsByGatheringIdAndUserIdAndIsActiveTrue(1L, 10L)).willReturn(true);
             given(gatheringMemberRepository.findByGatheringIdAndIsActiveTrueOrderByIdAsc(1L))
                     .willReturn(List.of(member));
             given(userClient.findByIds(List.of(10L))).willReturn(
                     Map.of(10L, UserInfo.builder().id(10L).nickname("member").build()));
-            given(todoRepository.countByGatheringIdAndUserId(1L, 10L)).willReturn(0L);
 
             MemberListResponse response = membershipQueryService.getMembers(1L, 10L);
 
@@ -225,14 +226,12 @@ class MembershipQueryServiceTest {
         @Test
         @DisplayName("일부 완료된 할 일이 있으면 달성률이 정확히 계산된다")
         void getMembersWithPartialCompletion() {
-            GatheringMember member = member(1L, 1L, 10L, GatheringRole.MEMBER);
+            GatheringMember member = member(1L, 1L, 10L, GatheringRole.MEMBER,"75.0");
             given(gatheringMemberRepository.existsByGatheringIdAndUserIdAndIsActiveTrue(1L, 10L)).willReturn(true);
             given(gatheringMemberRepository.findByGatheringIdAndIsActiveTrueOrderByIdAsc(1L))
                     .willReturn(List.of(member));
             given(userClient.findByIds(List.of(10L))).willReturn(
                     Map.of(10L, UserInfo.builder().id(10L).nickname("member").build()));
-            given(todoRepository.countByGatheringIdAndUserId(1L, 10L)).willReturn(4L);
-            given(todoRepository.countByGatheringIdAndUserIdAndIsCompletedTrue(1L, 10L)).willReturn(3L);
 
             MemberListResponse response = membershipQueryService.getMembers(1L, 10L);
 
@@ -243,9 +242,9 @@ class MembershipQueryServiceTest {
         @Test
         @DisplayName("여러 멤버 각각의 달성률을 독립적으로 계산한다")
         void getMembersWithMultipleMembersHavingDifferentRates() {
-            GatheringMember leader = member(1L, 1L, 10L, GatheringRole.LEADER);
-            GatheringMember memberA = member(2L, 1L, 20L, GatheringRole.MEMBER);
-            GatheringMember memberB = member(3L, 1L, 30L, GatheringRole.MEMBER);
+            GatheringMember leader = member(1L, 1L, 10L, GatheringRole.LEADER,"100.0");
+            GatheringMember memberA = member(2L, 1L, 20L, GatheringRole.MEMBER,"0.0");
+            GatheringMember memberB = member(3L, 1L, 30L, GatheringRole.MEMBER,"50.0");
 
             given(gatheringMemberRepository.existsByGatheringIdAndUserIdAndIsActiveTrue(1L, 10L)).willReturn(true);
             given(gatheringMemberRepository.findByGatheringIdAndIsActiveTrueOrderByIdAsc(1L))
@@ -255,15 +254,6 @@ class MembershipQueryServiceTest {
                     20L, UserInfo.builder().id(20L).nickname("memberA").build(),
                     30L, UserInfo.builder().id(30L).nickname("memberB").build()
             ));
-
-            // leader: 4/4 = 100%
-            given(todoRepository.countByGatheringIdAndUserId(1L, 10L)).willReturn(4L);
-            given(todoRepository.countByGatheringIdAndUserIdAndIsCompletedTrue(1L, 10L)).willReturn(4L);
-            // memberA: 0/0 = 0%
-            given(todoRepository.countByGatheringIdAndUserId(1L, 20L)).willReturn(0L);
-            // memberB: 1/2 = 50%
-            given(todoRepository.countByGatheringIdAndUserId(1L, 30L)).willReturn(2L);
-            given(todoRepository.countByGatheringIdAndUserIdAndIsCompletedTrue(1L, 30L)).willReturn(1L);
 
             MemberListResponse response = membershipQueryService.getMembers(1L, 10L);
 
@@ -296,9 +286,9 @@ class MembershipQueryServiceTest {
         }
     }
 
-    private GatheringMember member(Long id, Long gatheringId, Long userId, GatheringRole role) {
+    private GatheringMember member(Long id, Long gatheringId, Long userId, GatheringRole role,String overallAchievementRate) {
         GatheringMember m = GatheringMember.builder()
-                .gatheringId(gatheringId).userId(userId).role(role)
+                .gatheringId(gatheringId).userId(userId).role(role).overallAchievementRate(new BigDecimal(overallAchievementRate))
 .isActive(true).build();
         setField(m, "id", id);
         return m;
