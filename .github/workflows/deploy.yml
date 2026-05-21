@@ -57,8 +57,7 @@ jobs:
         uses: appleboy/ssh-action@v1
         env:
           DOCKER_IMAGE: ${{ secrets.DOCKER_USERNAME }}/fesi13-backend:latest
-          MYSQL_ROOT_PASSWORD: ${{ secrets.MYSQL_ROOT_PASSWORD }}
-          MYSQL_DATABASE: ${{ secrets.MYSQL_DATABASE }}
+          DB_URL: ${{ secrets.DB_URL }}
           DB_USERNAME: ${{ secrets.DB_USERNAME }}
           DB_PASSWORD: ${{ secrets.DB_PASSWORD }}
           JWT_SECRET: ${{ secrets.JWT_SECRET }}
@@ -68,22 +67,20 @@ jobs:
           KAKAO_CLIENT_SECRET: ${{ secrets.KAKAO_CLIENT_SECRET }}
           GOOGLE_CLIENT_ID: ${{ secrets.GOOGLE_CLIENT_ID }}
           GOOGLE_CLIENT_SECRET: ${{ secrets.GOOGLE_CLIENT_SECRET }}
+          ADMIN_REPAIR_SECRET: ${{ secrets.ADMIN_REPAIR_SECRET }}
         with:
           host: ${{ secrets.EC2_HOST }}
           username: ${{ secrets.EC2_USER }}
           key: ${{ secrets.EC2_SSH_KEY }}
-          envs: DOCKER_IMAGE,MYSQL_ROOT_PASSWORD,MYSQL_DATABASE,DB_USERNAME,DB_PASSWORD,JWT_SECRET,JWT_ACCESS_EXPIRATION,JWT_REFRESH_EXPIRATION,KAKAO_CLIENT_ID,KAKAO_CLIENT_SECRET,GOOGLE_CLIENT_ID,GOOGLE_CLIENT_SECRET,ADMIN_REPAIR_SECRET
+          envs: DOCKER_IMAGE,DB_URL,DB_USERNAME,DB_PASSWORD,JWT_SECRET,JWT_ACCESS_EXPIRATION,JWT_REFRESH_EXPIRATION,KAKAO_CLIENT_ID,KAKAO_CLIENT_SECRET,GOOGLE_CLIENT_ID,GOOGLE_CLIENT_SECRET,ADMIN_REPAIR_SECRET
           script_stop: true
           script: |
             cd /home/ubuntu/app
 
-            BASE_URL="https://${{ secrets.EC2_DOMAIN }}"
-
             # 값이 있는 변수만 .env에 기록 (없으면 docker-compose 기본값 사용)
             > .env
             [ -n "$DOCKER_IMAGE" ]           && echo "DOCKER_IMAGE=$DOCKER_IMAGE" >> .env
-            [ -n "$MYSQL_ROOT_PASSWORD" ]    && echo "MYSQL_ROOT_PASSWORD=$MYSQL_ROOT_PASSWORD" >> .env
-            [ -n "$MYSQL_DATABASE" ]         && echo "MYSQL_DATABASE=$MYSQL_DATABASE" >> .env
+            [ -n "$DB_URL" ]                 && echo "DB_URL=$DB_URL" >> .env
             [ -n "$DB_USERNAME" ]            && echo "DB_USERNAME=$DB_USERNAME" >> .env
             [ -n "$DB_PASSWORD" ]            && echo "DB_PASSWORD=$DB_PASSWORD" >> .env
             [ -n "$JWT_SECRET" ]             && echo "JWT_SECRET=$JWT_SECRET" >> .env
@@ -95,7 +92,6 @@ jobs:
             [ -n "$GOOGLE_CLIENT_SECRET" ]   && echo "GOOGLE_CLIENT_SECRET=$GOOGLE_CLIENT_SECRET" >> .env
             [ -n "$ADMIN_REPAIR_SECRET" ]    && echo "ADMIN_REPAIR_SECRET=$ADMIN_REPAIR_SECRET" >> .env
 
-            docker compose up -d mysql
             docker compose pull app
             docker compose up -d --no-deps --force-recreate app
             docker image prune -f
