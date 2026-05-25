@@ -12,6 +12,8 @@ public interface ReviewRepository extends JpaRepository<Review, Long> {
 
     boolean existsByGatheringIdAndReviewerId(Long gatheringId, Long reviewerId);
 
+    boolean existsByGatheringIdAndReviewerIdAndTargetUserId(Long gatheringId, Long reviewerId, Long targetUserId);
+
     Page<Review> findByTargetUserIdOrderByCreatedAtDesc(Long targetUserId, Pageable pageable);
 
     List<Review> findByTargetUserIdInOrderByCreatedAtDesc(List<Long> targetUserIds);
