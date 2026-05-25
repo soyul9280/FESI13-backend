@@ -129,7 +129,8 @@ class TodoControllerTest {
                     .andExpect(jsonPath("$.data.todos[0].id").value(100))
                     .andExpect(jsonPath("$.data.todos[0].content").value("공식문서 7챕터 읽기"))
                     .andExpect(jsonPath("$.data.weeklyAchievementRate").value(50.0))
-                    .andExpect(jsonPath("$.data.overallAchievementRate").value(75.0));
+                    .andExpect(jsonPath("$.data.overallAchievementRate").value(75.0))
+                    .andExpect(jsonPath("$.data.streakDays").value(5));
         }
 
         @Test
@@ -184,7 +185,8 @@ class TodoControllerTest {
                                 .build()
                 ),
                 BigDecimal.valueOf(50.0),
-                BigDecimal.valueOf(75.0)
+                BigDecimal.valueOf(75.0),
+                5
         );
     }
 }

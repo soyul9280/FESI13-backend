@@ -24,7 +24,9 @@ import com.fesi.deadlinemate.global.error.ErrorCode;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -208,7 +210,9 @@ public class TodoService {
                         .build())
                 .toList();
 
-        return MyTodoListResponse.of(responses, weeklyAchievementRate, overallAchievementRate);
+        int streakDays = calculateStreakDays(gatheringId, requesterId);
+
+        return MyTodoListResponse.of(responses, weeklyAchievementRate, overallAchievementRate, streakDays);
     }
 
     private Gathering findGathering(Long gatheringId) {
@@ -282,6 +286,30 @@ public class TodoService {
 
         long days = ChronoUnit.DAYS.between(gathering.getStartDate(), today);
         return (int) (days / 7) + 1;
+    }
+
+    private int calculateStreakDays(Long gatheringId, Long userId) {
+        List<LocalDateTime> completedAts = todoRepository.findCompletedAtsByGatheringIdAndUserId(gatheringId, userId);
+        if (completedAts.isEmpty()) return 0;
+
+        List<LocalDate> dates = completedAts.stream()
+                .map(LocalDateTime::toLocalDate)
+                .distinct()
+                .sorted(Comparator.reverseOrder())
+                .toList();
+
+        LocalDate today = LocalDate.now();
+        if (dates.get(0).isBefore(today.minusDays(1))) return 0;
+
+        int streak = 1;
+        for (int i = 1; i < dates.size(); i++) {
+            if (dates.get(i).equals(dates.get(i - 1).minusDays(1))) {
+                streak++;
+            } else {
+                break;
+            }
+        }
+        return streak;
     }
 
     private BigDecimal calculateOverallAchievementRate(Long gatheringId, Long userId) {
