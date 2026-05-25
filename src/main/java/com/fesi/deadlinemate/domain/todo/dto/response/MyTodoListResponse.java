@@ -9,17 +9,20 @@ import lombok.Builder;
 public record MyTodoListResponse(
         List<MyTodoItemResponse> todos,
         BigDecimal weeklyAchievementRate,
-        BigDecimal overallAchievementRate
+        BigDecimal overallAchievementRate,
+        int streakDays
 ) {
     public static MyTodoListResponse of(
             List<MyTodoItemResponse> todos,
             BigDecimal weeklyAchievementRate,
-            BigDecimal overallAchievementRate
+            BigDecimal overallAchievementRate,
+            int streakDays
     ) {
         return MyTodoListResponse.builder()
                 .todos(todos)
                 .weeklyAchievementRate(weeklyAchievementRate)
                 .overallAchievementRate(overallAchievementRate)
+                .streakDays(streakDays)
                 .build();
     }
 

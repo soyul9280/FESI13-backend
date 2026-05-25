@@ -113,6 +113,33 @@ class TodoRepositoryTest {
         }
     }
 
+    @Nested
+    @DisplayName("findCompletedAtsByGatheringIdAndUserId")
+    class FindCompletedAtsByGatheringIdAndUserId {
+
+        @Test
+        @DisplayName("completedAt이 null이 아닌 Todo의 completedAt만 반환한다")
+        void findCompletedAts_excludesNullCompletedAt() {
+            // todo1(미완료), todo4(미완료)는 completedAt=null → 제외
+            // todo2(완료)만 포함
+            List<LocalDateTime> result = todoRepository
+                    .findCompletedAtsByGatheringIdAndUserId(1L, 100L);
+
+            assertThat(result).hasSize(1);
+            assertThat(result.get(0)).isNotNull();
+        }
+
+        @Test
+        @DisplayName("다른 사용자의 completedAt은 반환하지 않는다")
+        void findCompletedAts_excludesOtherUsers() {
+            // userId=200의 todo3만 해당
+            List<LocalDateTime> result = todoRepository
+                    .findCompletedAtsByGatheringIdAndUserId(1L, 200L);
+
+            assertThat(result).hasSize(1);
+        }
+    }
+
     private Todo saveTodo(
             Long gatheringId,
             Long userId,

@@ -1,10 +1,13 @@
 package com.fesi.deadlinemate.domain.todo.repository;
 
 import com.fesi.deadlinemate.domain.todo.entity.Todo;
+import java.time.LocalDateTime;
 import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 
 public interface TodoRepository extends JpaRepository<Todo, Long> {
     Optional<Todo> findByIdAndGatheringId(Long todoId, Long gatheringId);
@@ -17,4 +20,7 @@ public interface TodoRepository extends JpaRepository<Todo, Long> {
     long countByGatheringIdAndUserIdAndIsCompletedTrue(Long gatheringId, Long userId);
     long countByGatheringIdAndUserIdAndWeekNumber(Long gatheringId, Long userId, int weekNumber);
     long countByGatheringIdAndUserIdAndWeekNumberAndIsCompletedTrue(Long gatheringId, Long userId, int weekNumber);
+
+    @Query("SELECT t.completedAt FROM Todo t WHERE t.gatheringId = :gatheringId AND t.userId = :userId AND t.completedAt IS NOT NULL")
+    List<LocalDateTime> findCompletedAtsByGatheringIdAndUserId(@Param("gatheringId") Long gatheringId, @Param("userId") Long userId);
 }
