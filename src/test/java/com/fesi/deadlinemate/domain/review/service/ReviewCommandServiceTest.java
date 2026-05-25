@@ -46,7 +46,7 @@ class ReviewCommandServiceTest {
             given(gatheringClient.findById(1L)).willReturn(Optional.of(completedGatheringInfo()));
             given(gatheringClient.isMember(1L, 10L)).willReturn(true);
             given(gatheringClient.isMember(1L, 20L)).willReturn(true);
-            given(reviewRepository.existsByGatheringIdAndReviewerId(1L, 10L)).willReturn(false);
+            given(reviewRepository.existsByGatheringIdAndReviewerIdAndTargetUserId(1L, 10L, 20L)).willReturn(false);
             given(reviewRepository.save(any(Review.class))).willAnswer(inv -> inv.getArgument(0));
 
             CreateReviewCommand command = new CreateReviewCommand(1L, 10L, List.of(
@@ -80,7 +80,8 @@ class ReviewCommandServiceTest {
         void alreadySubmitted() {
             given(gatheringClient.findById(1L)).willReturn(Optional.of(completedGatheringInfo()));
             given(gatheringClient.isMember(1L, 10L)).willReturn(true);
-            given(reviewRepository.existsByGatheringIdAndReviewerId(1L, 10L)).willReturn(true);
+            given(gatheringClient.isMember(1L, 20L)).willReturn(true);
+            given(reviewRepository.existsByGatheringIdAndReviewerIdAndTargetUserId(1L, 10L, 20L)).willReturn(true);
 
             CreateReviewCommand command = new CreateReviewCommand(1L, 10L, List.of(
                     new CreateReviewCommand.ReviewItem(20L, List.of("성실해요"), null, null)
@@ -96,7 +97,6 @@ class ReviewCommandServiceTest {
         void selfReviewThrows() {
             given(gatheringClient.findById(1L)).willReturn(Optional.of(completedGatheringInfo()));
             given(gatheringClient.isMember(1L, 10L)).willReturn(true);
-            given(reviewRepository.existsByGatheringIdAndReviewerId(1L, 10L)).willReturn(false);
 
             CreateReviewCommand command = new CreateReviewCommand(1L, 10L, List.of(
                     new CreateReviewCommand.ReviewItem(10L, List.of("성실해요"), null, null)
@@ -127,7 +127,6 @@ class ReviewCommandServiceTest {
         void nonMemberTargetThrows() {
             given(gatheringClient.findById(1L)).willReturn(Optional.of(completedGatheringInfo()));
             given(gatheringClient.isMember(1L, 10L)).willReturn(true);
-            given(reviewRepository.existsByGatheringIdAndReviewerId(1L, 10L)).willReturn(false);
             given(gatheringClient.isMember(1L, 20L)).willReturn(false);
 
             CreateReviewCommand command = new CreateReviewCommand(1L, 10L, List.of(
@@ -145,7 +144,7 @@ class ReviewCommandServiceTest {
             given(gatheringClient.findById(1L)).willReturn(Optional.of(completedGatheringInfo()));
             given(gatheringClient.isMember(1L, 10L)).willReturn(true);
             given(gatheringClient.isMember(1L, 20L)).willReturn(true);
-            given(reviewRepository.existsByGatheringIdAndReviewerId(1L, 10L)).willReturn(false);
+            given(reviewRepository.existsByGatheringIdAndReviewerIdAndTargetUserId(1L, 10L, 20L)).willReturn(false);
             given(reviewRepository.save(any(Review.class))).willAnswer(inv -> inv.getArgument(0));
 
             CreateReviewCommand command = new CreateReviewCommand(1L, 10L, List.of(
@@ -165,7 +164,6 @@ class ReviewCommandServiceTest {
             given(gatheringClient.findById(1L)).willReturn(Optional.of(completedGatheringInfo()));
             given(gatheringClient.isMember(1L, 10L)).willReturn(true);
             given(gatheringClient.isMember(1L, 20L)).willReturn(true);
-            given(reviewRepository.existsByGatheringIdAndReviewerId(1L, 10L)).willReturn(false);
 
             CreateReviewCommand command = new CreateReviewCommand(1L, 10L, List.of(
                     new CreateReviewCommand.ReviewItem(20L, List.of("성실해요"), "잘못된태그", null)
@@ -182,11 +180,11 @@ class ReviewCommandServiceTest {
             given(gatheringClient.findById(1L)).willReturn(Optional.of(completedGatheringInfo()));
             given(gatheringClient.isMember(1L, 10L)).willReturn(true);
             given(gatheringClient.isMember(1L, 20L)).willReturn(true);
-            given(reviewRepository.existsByGatheringIdAndReviewerId(1L, 10L)).willReturn(false);
+            given(reviewRepository.existsByGatheringIdAndReviewerIdAndTargetUserId(1L, 10L, 20L)).willReturn(false);
             given(reviewRepository.save(any(Review.class))).willAnswer(inv -> inv.getArgument(0));
 
             CreateReviewCommand command = new CreateReviewCommand(1L, 10L, List.of(
-                    new CreateReviewCommand.ReviewItem(20L, List.of("성실해요", "소통이 좋아요", "도움이 돼요"), null, null)
+                    new CreateReviewCommand.ReviewItem(20L, List.of("성실해요", "소통이 좋아요", "잘 도와줘요"), null, null)
             ));
 
             reviewCommandService.createReviews(command);

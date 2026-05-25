@@ -446,6 +446,48 @@ class TodoServiceTest {
             assertThat(response.todos()).hasSize(2);
             assertThat(response.weeklyAchievementRate()).isEqualByComparingTo("50.0");
             assertThat(response.overallAchievementRate()).isEqualByComparingTo("50.0");
+            assertThat(response.streakDays()).isEqualTo(0);
+        }
+
+        @Test
+        @DisplayName("오늘 포함 3일 연속 완료하면 streakDays가 3이다")
+        void getMyTodos_streak_threeConsecutiveDays() {
+            LocalDate today = LocalDate.now();
+            List<LocalDateTime> completedAts = List.of(
+                    today.atTime(10, 0),
+                    today.minusDays(1).atTime(20, 0),
+                    today.minusDays(2).atTime(15, 0)
+            );
+
+            when(gatheringRepository.findById(100L)).thenReturn(Optional.of(gathering));
+            when(gatheringMemberRepository.existsByGatheringIdAndUserIdAndIsActiveTrue(100L, 200L)).thenReturn(true);
+            when(todoRepository.findByGatheringIdAndUserIdOrderByWeekNumberAscCreatedAtAsc(100L, 200L))
+                    .thenReturn(List.of());
+            when(todoRepository.findCompletedAtsByGatheringIdAndUserId(100L, 200L)).thenReturn(completedAts);
+
+            MyTodoListResponse response = todoService.getMyTodos(100L, 200L, null);
+
+            assertThat(response.streakDays()).isEqualTo(3);
+        }
+
+        @Test
+        @DisplayName("가장 최근 완료일이 그저께이면 streakDays가 0이다")
+        void getMyTodos_streak_brokenStreak_returnsZero() {
+            LocalDate today = LocalDate.now();
+            List<LocalDateTime> completedAts = List.of(
+                    today.minusDays(2).atTime(10, 0),
+                    today.minusDays(3).atTime(10, 0)
+            );
+
+            when(gatheringRepository.findById(100L)).thenReturn(Optional.of(gathering));
+            when(gatheringMemberRepository.existsByGatheringIdAndUserIdAndIsActiveTrue(100L, 200L)).thenReturn(true);
+            when(todoRepository.findByGatheringIdAndUserIdOrderByWeekNumberAscCreatedAtAsc(100L, 200L))
+                    .thenReturn(List.of());
+            when(todoRepository.findCompletedAtsByGatheringIdAndUserId(100L, 200L)).thenReturn(completedAts);
+
+            MyTodoListResponse response = todoService.getMyTodos(100L, 200L, null);
+
+            assertThat(response.streakDays()).isEqualTo(0);
         }
     }
 

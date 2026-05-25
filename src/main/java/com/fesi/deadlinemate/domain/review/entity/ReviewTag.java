@@ -11,9 +11,9 @@ public enum ReviewTag {
 
     DILIGENT("성실해요"),
     GOOD_COMMUNICATION("소통이 좋아요"),
-    HELPFUL("도움이 돼요"),
-    PUNCTUAL("시간 약속을 잘 지켜요"),
-    WANT_AGAIN("다시 만나고 싶어요");
+    HELPFUL("잘 도와줘요"),
+    PUNCTUAL("시간을 잘 지켜요"),
+    WANT_AGAIN("다시 함께하고 싶어요");
 
     private final String displayName;
 
