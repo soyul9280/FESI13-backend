@@ -29,14 +29,15 @@ public class ReviewCommandService {
         validateGatheringCompleted(command.gatheringId());
         validateReviewerIsMember(command.gatheringId(), command.reviewerId());
 
-        if (reviewRepository.existsByGatheringIdAndReviewerId(command.gatheringId(), command.reviewerId())) {
-            throw new BusinessException(ErrorCode.REVIEW_ALREADY_SUBMITTED);
-        }
-
         command.reviews().forEach(item -> {
             validateNotSelfReview(command.reviewerId(), item.targetUserId());
             validateTargetIsMember(command.gatheringId(), item.targetUserId());
             validateMatesTag(item.matesTag());
+
+            if (reviewRepository.existsByGatheringIdAndReviewerIdAndTargetUserId(
+                    command.gatheringId(), command.reviewerId(), item.targetUserId())) {
+                throw new BusinessException(ErrorCode.REVIEW_ALREADY_SUBMITTED);
+            }
 
             Review review = Review.create(
                     command.gatheringId(), command.reviewerId(),
