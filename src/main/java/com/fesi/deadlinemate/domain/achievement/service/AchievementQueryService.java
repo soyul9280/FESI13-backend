@@ -14,6 +14,7 @@ import com.fesi.deadlinemate.global.error.BusinessException;
 import com.fesi.deadlinemate.global.error.ErrorCode;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
+import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.LinkedHashMap;
@@ -72,12 +73,14 @@ public class AchievementQueryService {
                             buildWeeklyRates(memberWeekMap, gathering.getTotalWeeks());
 
                     BigDecimal overallRate = calculateOverallRate(memberTodos);
+                    int streakDays = calculateStreakDaysFromTodos(memberTodos);
 
                     return AchievementResponse.MemberAchievementResponse.builder()
                             .userId(userId)
                             .nickname(user != null ? user.getNickname() : null)
                             .weeklyRates(weeklyRates)
                             .overallRate(overallRate)
+                            .streakDays(streakDays)
                             .build();
                 })
                 .toList();
@@ -208,6 +211,30 @@ public class AchievementQueryService {
         }
 
         return result;
+    }
+
+    private int calculateStreakDaysFromTodos(List<Todo> userTodos) {
+        List<LocalDate> dates = userTodos.stream()
+                .filter(todo -> todo.getCompletedAt() != null)
+                .map(todo -> todo.getCompletedAt().toLocalDate())
+                .distinct()
+                .sorted(Comparator.reverseOrder())
+                .toList();
+
+        if (dates.isEmpty()) return 0;
+
+        LocalDate today = LocalDate.now();
+        if (dates.get(0).isBefore(today.minusDays(1))) return 0;
+
+        int streak = 1;
+        for (int i = 1; i < dates.size(); i++) {
+            if (dates.get(i).equals(dates.get(i - 1).minusDays(1))) {
+                streak++;
+            } else {
+                break;
+            }
+        }
+        return streak;
     }
 
     private BigDecimal calculateOverallRate(List<Todo> todos) {
