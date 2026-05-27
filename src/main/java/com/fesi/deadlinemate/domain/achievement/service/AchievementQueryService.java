@@ -14,6 +14,7 @@ import com.fesi.deadlinemate.global.error.BusinessException;
 import com.fesi.deadlinemate.global.error.ErrorCode;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
+import java.time.Clock;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -35,6 +36,7 @@ public class AchievementQueryService {
     private final GatheringMemberRepository gatheringMemberRepository;
     private final TodoRepository todoRepository;
     private final UserClient userClient;
+    private final Clock clock;
 
     public AchievementResponse getAchievements(Long gatheringId, Long requesterId) {
         Gathering gathering = findGathering(gatheringId);
@@ -223,7 +225,7 @@ public class AchievementQueryService {
 
         if (dates.isEmpty()) return 0;
 
-        LocalDate today = LocalDate.now();
+        LocalDate today = LocalDate.now(clock);
         if (dates.get(0).isBefore(today.minusDays(1))) return 0;
 
         int streak = 1;
