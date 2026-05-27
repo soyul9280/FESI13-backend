@@ -905,7 +905,8 @@
         { "week": 2, "rate": 80.0 },
         { "week": 3, "rate": 40.0 }
       ],
-      "overallRate": 73.3
+      "overallRate": 73.3,
+      "streakDays": 7
     }
   ],
   "teamWeeklyRates": [

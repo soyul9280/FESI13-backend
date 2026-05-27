@@ -4,6 +4,7 @@ package com.fesi.deadlinemate.domain.todo.service;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -33,8 +34,11 @@ import com.fesi.deadlinemate.global.error.BusinessException;
 import com.fesi.deadlinemate.global.error.ErrorCode;
 import java.lang.reflect.Field;
 import java.math.BigDecimal;
+import java.time.Clock;
+import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -70,8 +74,17 @@ class TodoServiceTest {
     @Mock
     private AchievementService achievementService;
 
+    @Mock
+    private Clock clock;
+
     @InjectMocks
     private TodoService todoService;
+
+    private static final LocalDate TEST_TODAY = LocalDate.of(2026, 5, 27);
+    private static final Clock FIXED_CLOCK = Clock.fixed(
+            TEST_TODAY.atStartOfDay(ZoneId.systemDefault()).toInstant(),
+            ZoneId.systemDefault()
+    );
 
     private Gathering gathering;
 
@@ -97,6 +110,9 @@ class TodoServiceTest {
                 .build();
 
         setField(gathering, "id", 100L);
+
+        lenient().when(clock.instant()).thenReturn(FIXED_CLOCK.instant());
+        lenient().when(clock.getZone()).thenReturn(FIXED_CLOCK.getZone());
     }
 
     @Nested
@@ -452,11 +468,13 @@ class TodoServiceTest {
         @Test
         @DisplayName("오늘 포함 3일 연속 완료하면 streakDays가 3이다")
         void getMyTodos_streak_threeConsecutiveDays() {
-            LocalDate today = LocalDate.now();
+            when(clock.instant()).thenReturn(FIXED_CLOCK.instant());
+            when(clock.getZone()).thenReturn(FIXED_CLOCK.getZone());
+
             List<LocalDateTime> completedAts = List.of(
-                    today.atTime(10, 0),
-                    today.minusDays(1).atTime(20, 0),
-                    today.minusDays(2).atTime(15, 0)
+                    TEST_TODAY.atTime(10, 0),
+                    TEST_TODAY.minusDays(1).atTime(20, 0),
+                    TEST_TODAY.minusDays(2).atTime(15, 0)
             );
 
             when(gatheringRepository.findById(100L)).thenReturn(Optional.of(gathering));
@@ -473,10 +491,12 @@ class TodoServiceTest {
         @Test
         @DisplayName("가장 최근 완료일이 그저께이면 streakDays가 0이다")
         void getMyTodos_streak_brokenStreak_returnsZero() {
-            LocalDate today = LocalDate.now();
+            when(clock.instant()).thenReturn(FIXED_CLOCK.instant());
+            when(clock.getZone()).thenReturn(FIXED_CLOCK.getZone());
+
             List<LocalDateTime> completedAts = List.of(
-                    today.minusDays(2).atTime(10, 0),
-                    today.minusDays(3).atTime(10, 0)
+                    TEST_TODAY.minusDays(2).atTime(10, 0),
+                    TEST_TODAY.minusDays(3).atTime(10, 0)
             );
 
             when(gatheringRepository.findById(100L)).thenReturn(Optional.of(gathering));

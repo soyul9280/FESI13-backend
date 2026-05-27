@@ -15,7 +15,8 @@ public record AchievementResponse(
             Long userId,
             String nickname,
             List<WeeklyRateResponse> weeklyRates,
-            BigDecimal overallRate
+            BigDecimal overallRate,
+            int streakDays
     ) {
     }
 
