@@ -23,6 +23,7 @@ import com.fesi.deadlinemate.global.error.BusinessException;
 import com.fesi.deadlinemate.global.error.ErrorCode;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
+import java.time.Clock;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
@@ -47,6 +48,7 @@ public class TodoService {
     private final AchievementService achievementService;
     private final UserClient userClient;
     private final ApplicationEventPublisher eventPublisher;
+    private final Clock clock;
 
     @Transactional
     public CreateTodoResponse create(CreateTodoCommand command) {
@@ -238,7 +240,7 @@ public class TodoService {
     }
 
     private int calculateCurrentWeek(LocalDate startDate, LocalDate endDate) {
-        LocalDate today = LocalDate.now();
+        LocalDate today = LocalDate.now(clock);
 
         if (today.isBefore(startDate) || today.isAfter(endDate)) {
             throw new BusinessException(ErrorCode.INVALID_TODO_PERIOD);
@@ -274,7 +276,7 @@ public class TodoService {
             return requestedWeek;
         }
 
-        LocalDate today = LocalDate.now();
+        LocalDate today = LocalDate.now(clock);
 
         if (today.isBefore(gathering.getStartDate())) {
             return null;
@@ -298,7 +300,7 @@ public class TodoService {
                 .sorted(Comparator.reverseOrder())
                 .toList();
 
-        LocalDate today = LocalDate.now();
+        LocalDate today = LocalDate.now(clock);
         if (dates.get(0).isBefore(today.minusDays(1))) return 0;
 
         int streak = 1;
