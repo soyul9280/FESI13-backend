@@ -21,6 +21,9 @@ spring:
 image:
   upload-dir: ${IMAGE_UPLOAD_DIR:./data/images}
 
+app:
+  base-url: ${APP_BASE_URL:http://localhost:8080}
+
 admin:
   repair-secret: ${ADMIN_REPAIR_SECRET:}
 
