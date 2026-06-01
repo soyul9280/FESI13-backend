@@ -179,6 +179,29 @@ class ImageStorageServiceTest {
                     imageStorageService.delete("/images/gatherings/nonexistent.jpg"))
                     .doesNotThrowAnyException();
         }
+
+        @Test
+        @DisplayName("경로 탐색(path traversal) 시도는 무시된다")
+        void delete_pathTraversal() throws Exception {
+            Path sensitiveFile = tempDir.getParent().resolve("sensitive.txt");
+            Files.writeString(sensitiveFile, "secret");
+
+            imageStorageService.delete("http://localhost:8080/images/../../sensitive.txt");
+
+            assertThat(Files.exists(sensitiveFile)).isTrue();
+        }
+
+        @Test
+        @DisplayName("다른 호스트의 절대 URL은 로컬 파일 삭제를 시도하지 않는다")
+        void delete_differentHost() throws Exception {
+            Path file = tempDir.resolve("gatherings").resolve("photo.jpg");
+            Files.createDirectories(file.getParent());
+            Files.writeString(file, "data");
+
+            imageStorageService.delete("https://evil.com/images/gatherings/photo.jpg");
+
+            assertThat(Files.exists(file)).isTrue();
+        }
     }
 
     private void setField(Object target, String fieldName, Object value) throws Exception {

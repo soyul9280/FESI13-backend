@@ -68,6 +68,9 @@ public class ImageStorageService {
 
         String urlPath = imagePath;
         if (imagePath.startsWith("http")) {
+            if (!imagePath.startsWith(baseUrl)) {
+                return; // 다른 호스트 URL은 로컬 파일 삭제 대상이 아님
+            }
             try {
                 urlPath = URI.create(imagePath).getPath();
             } catch (IllegalArgumentException e) {
@@ -80,10 +83,15 @@ public class ImageStorageService {
         }
 
         String relativePath = urlPath.substring("/images/".length());
-        Path filePath = Paths.get(uploadDir, relativePath);
+        Path safeBase = Paths.get(uploadDir).toAbsolutePath().normalize();
+        Path resolvedPath = safeBase.resolve(relativePath).normalize();
+
+        if (!resolvedPath.startsWith(safeBase)) {
+            return; // 경로 탐색(path traversal) 방어
+        }
 
         try {
-            Files.deleteIfExists(filePath);
+            Files.deleteIfExists(resolvedPath);
         } catch (IOException e) {
             // 파일 삭제 실패는 무시 (로그로 처리 가능)
         }
