@@ -8,6 +8,7 @@ import com.fesi.deadlinemate.global.error.BusinessException;
 import com.fesi.deadlinemate.global.error.ErrorCode;
 import java.io.IOException;
 import java.lang.reflect.Field;
+import java.net.URI;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
@@ -30,6 +31,7 @@ class ImageStorageServiceTest {
     void setUp() throws Exception {
         imageStorageService = new ImageStorageService();
         setField(imageStorageService, "uploadDir", tempDir.toString());
+        setField(imageStorageService, "baseUrl", "http://localhost:8080");
         imageStorageService.init();
     }
 
@@ -38,14 +40,14 @@ class ImageStorageServiceTest {
     class Upload {
 
         @Test
-        @DisplayName("정상 이미지 업로드 시 /images/{directory}/{filename} 경로를 반환한다")
+        @DisplayName("정상 이미지 업로드 시 http://localhost:8080/images/{directory}/{filename} 절대 URL을 반환한다")
         void upload_success() {
             MockMultipartFile file = new MockMultipartFile(
                     "image", "photo.jpg", "image/jpeg", new byte[100]);
 
             String result = imageStorageService.upload(file, "gatherings");
 
-            assertThat(result).startsWith("/images/gatherings/");
+            assertThat(result).startsWith("http://localhost:8080/images/gatherings/");
             assertThat(result).endsWith(".jpg");
         }
 
@@ -55,9 +57,9 @@ class ImageStorageServiceTest {
             MockMultipartFile file = new MockMultipartFile(
                     "image", "photo.png", "image/png", new byte[100]);
 
-            String path = imageStorageService.upload(file, "users");
+            String url = imageStorageService.upload(file, "users");
 
-            String filename = path.substring("/images/users/".length());
+            String filename = URI.create(url).getPath().substring("/images/users/".length());
             Path savedPath = tempDir.resolve("users").resolve(filename);
             assertThat(Files.exists(savedPath)).isTrue();
         }
@@ -70,7 +72,7 @@ class ImageStorageServiceTest {
 
             String result = imageStorageService.upload(file, "gatherings");
 
-            assertThat(result).startsWith("/images/gatherings/");
+            assertThat(result).startsWith("http://localhost:8080/images/gatherings/");
         }
 
         @Test
@@ -115,7 +117,7 @@ class ImageStorageServiceTest {
 
             String result = imageStorageService.upload(file, "gatherings");
 
-            assertThat(result).startsWith("/images/gatherings/");
+            assertThat(result).startsWith("http://localhost:8080/images/gatherings/");
         }
     }
 
@@ -134,7 +136,7 @@ class ImageStorageServiceTest {
             List<String> results = imageStorageService.uploadAll(files, "gatherings");
 
             assertThat(results).hasSize(2);
-            assertThat(results).allMatch(p -> p.startsWith("/images/gatherings/"));
+            assertThat(results).allMatch(p -> p.startsWith("http://localhost:8080/images/gatherings/"));
         }
     }
 
@@ -147,11 +149,11 @@ class ImageStorageServiceTest {
         void delete_success() throws IOException {
             MockMultipartFile file = new MockMultipartFile(
                     "image", "photo.jpg", "image/jpeg", new byte[100]);
-            String path = imageStorageService.upload(file, "gatherings");
+            String url = imageStorageService.upload(file, "gatherings");
 
-            imageStorageService.delete(path);
+            imageStorageService.delete(url);
 
-            String filename = path.substring("/images/gatherings/".length());
+            String filename = URI.create(url).getPath().substring("/images/gatherings/".length());
             Path savedPath = tempDir.resolve("gatherings").resolve(filename);
             assertThat(Files.exists(savedPath)).isFalse();
         }

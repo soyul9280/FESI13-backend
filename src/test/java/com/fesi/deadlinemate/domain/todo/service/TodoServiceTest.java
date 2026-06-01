@@ -90,7 +90,7 @@ class TodoServiceTest {
 
     @BeforeEach
     void setUp() {
-        LocalDate today = LocalDate.now();
+        LocalDate today = LocalDate.now(FIXED_CLOCK);
 
         gathering = Gathering.builder()
                 .leaderId(10L)

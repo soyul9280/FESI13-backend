@@ -4,6 +4,7 @@ import com.fesi.deadlinemate.global.error.BusinessException;
 import com.fesi.deadlinemate.global.error.ErrorCode;
 import jakarta.annotation.PostConstruct;
 import java.io.IOException;
+import java.net.URI;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -24,6 +25,9 @@ public class ImageStorageService {
 
     @Value("${image.upload-dir}")
     private String uploadDir;
+
+    @Value("${app.base-url}")
+    private String baseUrl;
 
     @PostConstruct
     public void init() {
@@ -48,7 +52,7 @@ public class ImageStorageService {
             throw new BusinessException(ErrorCode.IMAGE_UPLOAD_FAILED);
         }
 
-        return "/images/" + directory + "/" + filename;
+        return baseUrl + "/images/" + directory + "/" + filename;
     }
 
     public List<String> uploadAll(List<MultipartFile> files, String directory) {
@@ -58,11 +62,24 @@ public class ImageStorageService {
     }
 
     public void delete(String imagePath) {
-        if (imagePath == null || !imagePath.startsWith("/images/")) {
+        if (imagePath == null) {
             return;
         }
 
-        String relativePath = imagePath.substring("/images/".length());
+        String urlPath = imagePath;
+        if (imagePath.startsWith("http")) {
+            try {
+                urlPath = URI.create(imagePath).getPath();
+            } catch (IllegalArgumentException e) {
+                return;
+            }
+        }
+
+        if (!urlPath.startsWith("/images/")) {
+            return;
+        }
+
+        String relativePath = urlPath.substring("/images/".length());
         Path filePath = Paths.get(uploadDir, relativePath);
 
         try {

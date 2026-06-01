@@ -25,6 +25,7 @@ services:
       GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET}
       ADMIN_REPAIR_SECRET: ${ADMIN_REPAIR_SECRET}
       IMAGE_UPLOAD_DIR: /app/data/images
+      APP_BASE_URL: https://sailmate.store
     volumes:
       - app_images:/app/data/images
 
