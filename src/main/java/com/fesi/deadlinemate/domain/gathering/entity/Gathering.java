@@ -53,12 +53,10 @@ public class Gathering extends BaseTimeEntity {
     @Column(nullable = false, length = 100)
     private String shortDescription;
 
-    @Lob
-    @Column(nullable = false)
+    @Column(nullable = false, columnDefinition = "LONGTEXT")
     private String description;
 
-    @Lob
-    @Column(nullable = false)
+    @Column(nullable = false, columnDefinition = "LONGTEXT")
     private String goal;
 
     @Column(nullable = false)
