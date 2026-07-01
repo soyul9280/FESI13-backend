@@ -11,6 +11,7 @@ users ────────────────────────�
   │  1:N  applications (applicant_id)                                       │
   │  1:N  todos (user_id)                                                   │
   │  1:N  notifications (user_id)                                           │
+  │  1:N  fcm_tokens (user_id)                                              │
   │  1:N  reviews (reviewer_id / target_user_id)                            │
   │  1:N  gathering_likes (user_id)                                         │
   │  1:N  reputation_logs (user_id)                                         │
@@ -220,6 +221,21 @@ gatherings ───────────────────────
 
 ---
 
+### `fcm_tokens` — FCM 푸시 토큰
+
+| 컬럼명 | 타입 | NULL | KEY | 설명 |
+|---|---|---|---|---|
+| `id` | BIGINT | NOT NULL | PK | Auto Increment |
+| `user_id` | BIGINT | NOT NULL | FK → users.id | 토큰 소유 사용자 |
+| `token` | VARCHAR(512) | NOT NULL | UNIQUE | FCM 등록 토큰 |
+| `user_agent` | VARCHAR(200) | NULL | | 기기 구분용 (선택) |
+| `created_at` | TIMESTAMP | NOT NULL | | 생성일시 |
+| `updated_at` | TIMESTAMP | NOT NULL | | 수정일시 |
+
+> 사용자 1 : 토큰 N (멀티 디바이스). `token` UNIQUE로 중복 방지(upsert)
+
+---
+
 ### `reviews` — 리뷰
 
 | 컬럼명 | 타입 | NULL | KEY | 설명 |
@@ -316,4 +332,6 @@ gatherings ───────────────────────
 | `weekly_plan_details` | `(weekly_plan_id, display_order)` UNIQUE | 세부 계획 순서 보장 / 정렬 조회 |
 | `todos` | `(gathering_id, user_id, week_number)` | Todo 조회 |
 | `notifications` | `(user_id, is_read)` | 읽지 않은 알림 조회 |
+| `fcm_tokens` | `user_id` | 사용자별 토큰 조회 |
+| `fcm_tokens` | `token` UNIQUE | 토큰 중복 방지 / 삭제 |
 | `reviews` | `(gathering_id, reviewer_id, target_user_id)` UNIQUE | 중복 리뷰 방지 |
