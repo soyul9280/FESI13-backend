@@ -19,7 +19,8 @@
 9. [리뷰 (Reviews)](#9-리뷰-reviews)
 10. [결과 리포트 (Reports)](#10-결과-리포트-reports)
 11. [찜하기 (Likes)](#11-찜하기-likes)
-12. [공통 에러 코드](#12-공통-에러-코드)
+12. [FCM 푸시 알림 (Push Notifications)](#12-fcm-푸시-알림-push-notifications)
+13. [공통 에러 코드](#13-공통-에러-코드)
 
 ---
 
@@ -1209,7 +1210,46 @@
 
 ---
 
-## 12. 공통 에러 코드
+## 12. FCM 푸시 알림 (Push Notifications)
+
+> PWA 웹 푸시를 위한 FCM 토큰 관리 API. 기존 인앱 알림(8번)과 병행 운영된다.
+> 같은 이벤트 발생 시 인앱 알림 row INSERT + FCM 푸시 발송, 두 경로로 나간다.
+
+### POST `/push/tokens` 🔒
+> FCM 토큰 등록 (알림 허용 또는 토큰 갱신 시)
+
+**Request Body**
+```json
+{ "token": "<fcm-registration-token>" }
+```
+
+**Response `200`**
+```json
+{ "success": true }
+```
+
+**비고**
+- 같은 토큰이 이미 존재하면 무시 (중복 등록 방지)
+- 한 사용자가 여러 기기 토큰 보유 가능 (멀티 디바이스 지원)
+
+---
+
+### DELETE `/push/tokens` 🔒
+> FCM 토큰 삭제 (알림 끄기·로그아웃 시)
+
+**Request Body**
+```json
+{ "token": "<fcm-registration-token>" }
+```
+
+**Response `200`**
+```json
+{ "success": true }
+```
+
+---
+
+## 13. 공통 에러 코드
 
 | HTTP 코드 | Error Code | 설명 |
 |---|---|---|
