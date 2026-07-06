@@ -13,7 +13,7 @@ public interface GatheringCategoryRepository extends JpaRepository<GatheringCate
 
     List<GatheringCategory> findByGatheringIdIn(List<Long> gatheringIds);
 
-    @Modifying
+    @Modifying(clearAutomatically = true)
     @Query("DELETE FROM GatheringCategory gc WHERE gc.gatheringId = :gatheringId")
     void deleteByGatheringId(@Param("gatheringId") Long gatheringId);
 }
