@@ -38,6 +38,7 @@ import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
@@ -333,10 +334,37 @@ public class GatheringService {
         gatheringCategoryRepository.saveAll(entities);
     }
 
-    private void replaceCategories(Long gatheringId, List<Category> categories) {
-        gatheringCategoryRepository.deleteByGatheringId(gatheringId);
-        gatheringCategoryRepository.flush();
-        saveCategories(gatheringId, categories);
+    private void replaceCategories(Long gatheringId, List<Category> newCategories) {
+        Set<Long> newIds = newCategories.stream()
+                .map(Category::getId)
+                .collect(Collectors.toSet());
+
+        List<GatheringCategory> existing = gatheringCategoryRepository.findByGatheringId(gatheringId);
+        Set<Long> existingIds = existing.stream()
+                .map(GatheringCategory::getCategoryId)
+                .collect(Collectors.toSet());
+
+        if (newIds.equals(existingIds)) {
+            return;
+        }
+
+        List<GatheringCategory> toDelete = existing.stream()
+                .filter(gc -> !newIds.contains(gc.getCategoryId()))
+                .toList();
+        if (!toDelete.isEmpty()) {
+            gatheringCategoryRepository.deleteAll(toDelete);
+        }
+
+        List<GatheringCategory> toInsert = newCategories.stream()
+                .filter(c -> !existingIds.contains(c.getId()))
+                .map(c -> GatheringCategory.builder()
+                        .gatheringId(gatheringId)
+                        .categoryId(c.getId())
+                        .build())
+                .toList();
+        if (!toInsert.isEmpty()) {
+            gatheringCategoryRepository.saveAll(toInsert);
+        }
     }
 
     private List<Long> findCategoryIds(Long gatheringId) {
