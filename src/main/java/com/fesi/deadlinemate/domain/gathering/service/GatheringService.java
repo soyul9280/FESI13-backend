@@ -335,6 +335,7 @@ public class GatheringService {
 
     private void replaceCategories(Long gatheringId, List<Category> categories) {
         gatheringCategoryRepository.deleteByGatheringId(gatheringId);
+        gatheringCategoryRepository.flush();
         saveCategories(gatheringId, categories);
     }
 

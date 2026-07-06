@@ -16,7 +16,7 @@ public interface GatheringImageRepository extends JpaRepository<GatheringImage, 
         Integer getDisplayOrder();
     }
 
-    @Modifying(clearAutomatically = true, flushAutomatically = true)
+    @Modifying
     @Query("DELETE FROM GatheringImage gi WHERE gi.gatheringId = :gatheringId")
     void deleteByGatheringId(@Param("gatheringId") Long gatheringId);
 
