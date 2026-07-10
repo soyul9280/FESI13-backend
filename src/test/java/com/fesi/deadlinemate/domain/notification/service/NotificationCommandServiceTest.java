@@ -30,6 +30,9 @@ class NotificationCommandServiceTest {
     @Mock
     private NotificationRepository notificationRepository;
 
+    @Mock
+    private FcmPushService fcmPushService;
+
     @InjectMocks
     private NotificationCommandService notificationCommandService;
 

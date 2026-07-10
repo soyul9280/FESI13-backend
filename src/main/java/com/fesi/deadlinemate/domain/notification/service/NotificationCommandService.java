@@ -16,6 +16,7 @@ import org.springframework.transaction.annotation.Transactional;
 public class NotificationCommandService {
 
     private final NotificationRepository notificationRepository;
+    private final FcmPushService fcmPushService;
 
     @Transactional(propagation = Propagation.REQUIRES_NEW)
     public void send(SendNotificationCommand command) {
@@ -28,6 +29,7 @@ public class NotificationCommandService {
                 .referenceType(command.referenceType())
                 .build();
         notificationRepository.save(notification);
+        fcmPushService.sendToUser(command);
     }
 
     public void markAsRead(Long notificationId, Long userId) {
