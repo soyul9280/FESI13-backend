@@ -27,6 +27,10 @@ app:
 admin:
   repair-secret: ${ADMIN_REPAIR_SECRET:}
 
+firebase:
+  credentials:
+    path: ${FIREBASE_CREDENTIALS_PATH:}
+
 server:
   port: 8080
   forward-headers-strategy: native
