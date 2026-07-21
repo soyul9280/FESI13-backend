@@ -67,7 +67,7 @@ gatherings ───────────────────────
 | `type` | ENUM | NOT NULL | | `STUDY` \| `PROJECT` |
 | `title` | VARCHAR(60) | NOT NULL | | 모임 제목 (2~30자) |
 | `short_description` | VARCHAR(100) | NOT NULL | | 한 줄 소개 (2~50자) |
-| `description` | TEXT | NOT NULL | | 상세 설명 (10~1000자) |
+| `description` | TEXT | NULL | | 상세 설명 (선택, 작성 시 10~1000자) |
 | `goal` | TEXT | NOT NULL | | 모임 최종 목표 |
 | `max_members` | TINYINT | NOT NULL | | 2~10명 |
 | `current_members` | TINYINT | NOT NULL | | 현재 멤버 수, 기본값 1 |
@@ -103,6 +103,7 @@ gatherings ───────────────────────
 | `id` | BIGINT | NOT NULL | PK | Auto Increment |
 | `gathering_id` | BIGINT | NOT NULL | FK → gatherings.id | |
 | `tag` | VARCHAR(30) | NOT NULL | | 태그명 (최대 15자) |
+> 모임당 최소 1개, 최대 10개 태그 필요 — API 요청 검증(`@NotEmpty`)으로 강제되며 DB 제약은 아님
 
 ---
 

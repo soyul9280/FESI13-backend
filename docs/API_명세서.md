@@ -369,6 +369,23 @@
 > multipart/form-data
 
 **Request Body**
+
+| 필드 | 타입 | 필수 | 설명 |
+|---|---|---|---|
+| `type` | string | 필수 | `STUDY` \| `PROJECT` |
+| `categoryIds` | number[] | 필수 | 최소 1개 ~ 최대 3개 |
+| `title` | string | 필수 | 2~30자 |
+| `shortDescription` | string | 필수 | 2~50자 |
+| `description` | string | 선택 | 작성 시 10~1000자 |
+| `tags` | string[] | 필수 | 최소 1개 ~ 최대 10개, 태그당 15자 이하 |
+| `goal` | string | 필수 | |
+| `maxMembers` | number | 필수 | 2~10명 |
+| `recruitDeadline` | string(date) | 필수 | |
+| `startDate` | string(date) | 필수 | |
+| `endDate` | string(date) | 필수 | |
+| `weeklyGuides` | array | 선택 | 주차별 계획, 항목당 `title`/`details`도 선택 |
+| `images` | file[] | 선택 | 별도 multipart part (`images`) |
+
 ```json
 {
   "type": "스터디",
@@ -507,8 +524,9 @@
 | `gatheringId` | number | 모임 ID |
 
 **Request Body**
+- 필드별 필수/선택 여부는 POST `/gatherings`와 동일 (`tags` 필수, `description`/`weeklyGuides` 선택)
 - 모집 중 상태: 생성 시 필드 전부 수정 가능
-- 진행 중 상태: `description`, `weeklyGuides`, `endDate` 만 수정 가능
+- 진행 중 상태: `description`, `weeklyGuides`, `endDate` 만 수정 가능 (다른 필드를 변경하면 `INVALID_IN_PROGRESS_UPDATE_ITEMS` 에러)
 
 **Response `200`**
 ```json
