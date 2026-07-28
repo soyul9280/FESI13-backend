@@ -145,7 +145,7 @@ class UserControllerTest {
         mockMvc.perform(get("/api/v1/users/2"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.nickname").value("마감왕"))
-                .andExpect(jsonPath("$.data.reputationLabel").value("신뢰 메이트"));
+                .andExpect(jsonPath("$.data.reputationLabel").value("연기 메이트"));
     }
 
     @Test

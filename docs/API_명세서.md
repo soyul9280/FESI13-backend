@@ -211,7 +211,7 @@
   "profileImage": "https://...",
   "provider": "EMAIL",
   "reputationScore": 36.5,
-  "reputationLabel": "신뢰 메이트",
+  "reputationLabel": "연기 메이트",
   "completedGatherings": 3,
   "avgAchievementRate": 78.5,
   "reviewCount": 5
@@ -295,7 +295,7 @@
   "nickname": "열정맨",
   "profileImage": "https://...",
   "reputationScore": 38.0,
-  "reputationLabel": "신뢰 메이트",
+  "reputationLabel": "불씨 메이트",
   "reviews": [...]
 }
 ```
