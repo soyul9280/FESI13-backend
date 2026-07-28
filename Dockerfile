@@ -10,6 +10,8 @@ RUN chmod +x gradlew && ./gradlew bootJar -x test --no-daemon
 
 # Stage 2: Run
 FROM eclipse-temurin:21-jre-jammy
+ENV TZ=Asia/Seoul
+RUN ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone
 WORKDIR /app
 COPY --from=builder /app/build/libs/*.jar app.jar
 EXPOSE 8080
