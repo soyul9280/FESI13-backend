@@ -76,7 +76,7 @@ public class GatheringService {
                 .type(command.type())
                 .title(command.title())
                 .shortDescription(command.shortDescription())
-                .description(command.description())
+                .description(normalizeDescription(command.description()))
                 .goal(command.goal())
                 .maxMembers(command.maxMembers())
                 .currentMembers(1)
@@ -221,7 +221,7 @@ public class GatheringService {
                 command.type(),
                 command.title(),
                 command.shortDescription(),
-                command.description(),
+                normalizeDescription(command.description()),
                 command.goal(),
                 command.maxMembers(),
                 command.recruitDeadline(),
@@ -263,7 +263,7 @@ public class GatheringService {
                 command.type(),
                 command.title(),
                 command.shortDescription(),
-                command.description(),
+                normalizeDescription(command.description()),
                 command.goal(),
                 command.maxMembers(),
                 command.recruitDeadline(),
@@ -495,6 +495,15 @@ public class GatheringService {
     private void replaceTags(Long gatheringId, List<String> tags) {
         gatheringTagRepository.deleteByGatheringId(gatheringId);
         saveTags(gatheringId, tags);
+    }
+
+    private String normalizeDescription(String description) {
+        if (description == null) {
+            return null;
+        }
+
+        String trimmed = description.trim();
+        return trimmed.isEmpty() ? null : trimmed;
     }
 
     private List<String> normalizeTags(List<String> tags) {

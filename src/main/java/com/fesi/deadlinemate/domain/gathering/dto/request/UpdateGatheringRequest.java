@@ -39,7 +39,6 @@ public record UpdateGatheringRequest(
         String shortDescription,
 
         @Schema(example = "매주 React 심화 개념을 학습하고 실제 프로젝트에 적용합니다. useState, useEffect, 커스텀 훅을 마스터해요.")
-        @NotBlank(message = "상세 설명은 필수입니다.")
         @Size(min = 10, max = 1000, message = "상세 설명은 10자 이상 1000자 이하여야 합니다.")
         String description,
 
@@ -48,6 +47,7 @@ public record UpdateGatheringRequest(
         String goal,
 
         @ArraySchema(schema = @Schema(example = "React"))
+        @NotEmpty(message = "태그는 최소 1개 이상 선택해야 합니다.")
         @Size(max = 10, message = "태그는 최대 10개까지 가능합니다.")
         List<@NotBlank(message = "태그는 비어 있을 수 없습니다.")
         @Size(max = 15, message = "태그는 15자 이하여야 합니다.") String> tags,
@@ -74,7 +74,6 @@ public record UpdateGatheringRequest(
         LocalDate endDate,
 
         @Valid
-        @NotEmpty(message = "주차별 계획은 최소 1개 이상 필요합니다.")
         List<WeeklyGuideRequest> weeklyGuides,
 
         List<String> keepImageUrls
@@ -104,7 +103,7 @@ public record UpdateGatheringRequest(
                 .startDate(startDate)
                 .endDate(endDate)
                 .weeklyGuides(
-                        weeklyGuides.stream()
+                        weeklyGuides == null ? List.of() : weeklyGuides.stream()
                                 .map(w -> new UpdateGatheringCommand.UpdateWeeklyGuideCommand(
                                         w.week(),
                                         w.title(),

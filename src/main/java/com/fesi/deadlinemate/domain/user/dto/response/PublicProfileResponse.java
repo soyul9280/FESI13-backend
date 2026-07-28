@@ -27,9 +27,9 @@ public class PublicProfileResponse {
     }
 
     private static String getReputationLabel(BigDecimal score) {
-        if (score.compareTo(BigDecimal.valueOf(40)) >= 0) return "최고 메이트";
-        if (score.compareTo(BigDecimal.valueOf(35)) >= 0) return "신뢰 메이트";
-        if (score.compareTo(BigDecimal.valueOf(30)) >= 0) return "성장 메이트";
-        return "새싹 메이트";
+        if (score.compareTo(BigDecimal.valueOf(45.0)) >= 0) return "태양 메이트";
+        if (score.compareTo(BigDecimal.valueOf(40.0)) >= 0) return "불꽃 메이트";
+        if (score.compareTo(BigDecimal.valueOf(37.5)) >= 0) return "불씨 메이트";
+        return "연기 메이트";
     }
 }
