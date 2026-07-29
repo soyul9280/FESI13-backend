@@ -11,16 +11,17 @@
 1. [인증 (Authentication)](#1-인증-authentication)
 2. [사용자 (Users)](#2-사용자-users)
 3. [모임 (Gatherings)](#3-모임-gatherings)
-4. [모임 신청 (Applications)](#4-모임-신청-applications)
-5. [모임 멤버십 (Memberships)](#5-모임-멤버십-memberships)
-6. [Todo](#6-todo)
-7. [달성률 (Achievement)](#7-달성률-achievement)
-8. [알림 (Notifications)](#8-알림-notifications)
-9. [리뷰 (Reviews)](#9-리뷰-reviews)
-10. [결과 리포트 (Reports)](#10-결과-리포트-reports)
-11. [찜하기 (Likes)](#11-찜하기-likes)
-12. [FCM 푸시 알림 (Push Notifications)](#12-fcm-푸시-알림-push-notifications)
-13. [공통 에러 코드](#13-공통-에러-코드)
+4. [모임 임시저장 (Gathering Drafts)](#4-모임-임시저장-gathering-drafts)
+5. [모임 신청 (Applications)](#5-모임-신청-applications)
+6. [모임 멤버십 (Memberships)](#6-모임-멤버십-memberships)
+7. [Todo](#7-todo)
+8. [달성률 (Achievement)](#8-달성률-achievement)
+9. [알림 (Notifications)](#9-알림-notifications)
+10. [리뷰 (Reviews)](#10-리뷰-reviews)
+11. [결과 리포트 (Reports)](#11-결과-리포트-reports)
+12. [찜하기 (Likes)](#12-찜하기-likes)
+13. [FCM 푸시 알림 (Push Notifications)](#13-fcm-푸시-알림-push-notifications)
+14. [공통 에러 코드](#14-공통-에러-코드)
 
 ---
 
@@ -385,6 +386,7 @@
 | `endDate` | string(date) | 필수 | |
 | `weeklyGuides` | array | 선택 | 주차별 계획, 항목당 `title`/`details`도 선택 |
 | `images` | file[] | 선택 | 별도 multipart part (`images`) |
+| `draftId` | number | 선택 | 이어작성한 임시저장 ID. 전달 시 생성 성공하면 해당 임시저장 자동 삭제 |
 
 ```json
 {
@@ -422,6 +424,7 @@
 **비고**
 - 생성자는 자동으로 `LEADER` + 첫 번째 멤버로 등록
 - 이미지는 여러 장 등록 가능
+- `draftId`를 함께 보내면 모임 생성이 성공한 뒤 해당 임시저장을 서버에서 자동 삭제(본인 소유가 아니거나 존재하지 않으면 조용히 무시, 모임 생성 자체는 실패하지 않음)
 
 ---
 
@@ -560,7 +563,182 @@
 
 ---
 
-## 4. 모임 신청 (Applications)
+## 4. 모임 임시저장 (Gathering Drafts)
+
+> 모임 생성 폼(단계별 퍼널) 작성 중 이탈해도 이어 쓸 수 있도록 서버(DB)에 임시저장한다.
+> 로컬스토리지가 아닌 DB 저장이므로 기기/브라우저를 바꿔도 유지되며, 마이페이지 "임시저장" 탭에서도 조회 가능하다.
+
+**Content-Type**
+> application/json
+
+**비고 (공통)**
+- 임시저장은 유저당 **최대 5개**까지 유지된다. 6개째 생성 시 `409 DRAFT_LIMIT_EXCEEDED` — 기존 임시저장을 삭제하거나 덮어써야 함
+- 모든 필드는 **선택(nullable)** — 퍼널 중간 어느 단계에서 저장해도 되도록 검증을 강하게 걸지 않음 (실제 모임 생성 시점의 검증은 `POST /gatherings`와 동일하게 적용)
+- 이미지 업로드는 임시저장 단계에서는 지원하지 않음 (실제 `POST /gatherings` 생성 시에만 업로드)
+
+### POST `/gatherings/drafts` 🔒
+> 임시저장 생성
+
+**Request Body**
+
+| 필드 | 타입 | 설명 |
+|---|---|---|
+| `type` | string | `STUDY` \| `PROJECT` |
+| `categoryIds` | number[] | |
+| `title` | string | |
+| `shortDescription` | string | |
+| `description` | string | |
+| `tags` | string[] | |
+| `goal` | string | |
+| `maxMembers` | number | |
+| `recruitDeadline` | string(date) | |
+| `startDate` | string(date) | |
+| `endDate` | string(date) | |
+| `weeklyGuides` | array | `week`/`title`/`details` |
+
+```json
+{
+  "type": "STUDY",
+  "categoryIds": [1, 2],
+  "title": "React 완전 정복 스터디",
+  "shortDescription": "리액트 공식문서를 같이 읽어요"
+}
+```
+
+**Response `201`**
+```json
+{
+  "success": true,
+  "data": {
+    "draftId": 3,
+    "updatedAt": "2026-07-29T10:00:00"
+  }
+}
+```
+
+**에러**
+- `409 DRAFT_LIMIT_EXCEEDED` — 유저당 임시저장 개수(5개) 초과
+
+---
+
+### GET `/gatherings/drafts` 🔒
+> 내 임시저장 목록 조회 (마이페이지 "임시저장" 탭용)
+
+**Response `200`**
+```json
+{
+  "success": true,
+  "data": {
+    "drafts": [
+      {
+        "draftId": 3,
+        "title": "React 완전 정복 스터디",
+        "type": "STUDY",
+        "updatedAt": "2026-07-29T10:00:00"
+      },
+      {
+        "draftId": 2,
+        "title": null,
+        "type": null,
+        "updatedAt": "2026-07-27T21:13:00"
+      }
+    ],
+    "totalCount": 2
+  }
+}
+```
+
+**비고**
+- `updatedAt` 기준 최신순 정렬 — 프론트에서 "n분 전 저장" 표시에 사용
+- `title`이 아직 입력 전이면 `null` (프론트에서 "제목 없음" 등으로 표시)
+
+---
+
+### GET `/gatherings/drafts/:draftId` 🔒
+> 임시저장 상세 조회 (이어작성 진입 시)
+
+**Path Parameters**
+
+| 파라미터 | 타입 | 설명 |
+|---|---|---|
+| `draftId` | number | 임시저장 ID |
+
+**Response `200`**
+```json
+{
+  "success": true,
+  "data": {
+    "draftId": 3,
+    "type": "STUDY",
+    "categoryIds": [1, 2],
+    "title": "React 완전 정복 스터디",
+    "shortDescription": "리액트 공식문서를 같이 읽어요",
+    "description": null,
+    "tags": ["React", "프론트엔드"],
+    "goal": null,
+    "maxMembers": 6,
+    "recruitDeadline": null,
+    "startDate": null,
+    "endDate": null,
+    "weeklyGuides": [],
+    "updatedAt": "2026-07-29T10:00:00"
+  }
+}
+```
+
+**에러**
+- `403` — 본인 소유가 아닌 임시저장 조회 시도
+- `404` — 존재하지 않는 임시저장
+
+---
+
+### PUT `/gatherings/drafts/:draftId` 🔒
+> 임시저장 수정 (이어작성 중 자동저장/수동저장)
+
+**Request Body**
+- 필드 종류는 `POST /gatherings/drafts`와 동일, 보낸 필드만 갱신(부분 업데이트)
+
+**Response `200`**
+```json
+{
+  "success": true,
+  "data": {
+    "draftId": 3,
+    "updatedAt": "2026-07-29T10:05:00"
+  }
+}
+```
+
+**에러**
+- `403` — 본인 소유가 아닌 임시저장 수정 시도
+- `404` — 존재하지 않는 임시저장
+
+---
+
+### DELETE `/gatherings/drafts/:draftId` 🔒
+> 임시저장 삭제
+
+**Path Parameters**
+
+| 파라미터 | 타입 | 설명 |
+|---|---|---|
+| `draftId` | number | 임시저장 ID |
+
+**Response `200`**
+```json
+{ "success": true }
+```
+
+**에러**
+- `403` — 본인 소유가 아닌 임시저장 삭제 시도
+- `404` — 존재하지 않는 임시저장
+
+**비고**
+- 실제 모임 생성(`POST /gatherings`)이 완료되면 해당 임시저장은 서버에서 자동 삭제
+
+---
+
+## 5. 모임 신청 (Applications)
 
 ### POST `/gatherings/:gatheringId/applications` 🔒
 > 모임 참여 신청
@@ -691,7 +869,7 @@
 
 ---
 
-## 5. 모임 멤버십 (Memberships)
+## 6. 모임 멤버십 (Memberships)
 
 ### GET `/users/me/gatherings` 🔒
 > 내가 참여 중인 모임 목록 조회
@@ -798,7 +976,7 @@
 
 ---
 
-## 6. Todo
+## 7. Todo
 
 ### GET `/gatherings/:gatheringId/todos` 🔒
 > 모임 전체 Todo 조회 (참여 멤버만)
@@ -907,7 +1085,7 @@
 
 ---
 
-## 7. 달성률 (Achievement)
+## 8. 달성률 (Achievement)
 
 ### GET `/gatherings/:gatheringId/achievements` 🔒
 > 모임 전체 달성률 현황
@@ -958,7 +1136,7 @@
 
 ---
 
-## 8. 알림 (Notifications)
+## 9. 알림 (Notifications)
 
 ### GET `/notifications` 🔒
 > 내 알림 목록
@@ -1021,7 +1199,7 @@
 
 ---
 
-## 9. 리뷰 (Reviews)
+## 10. 리뷰 (Reviews)
 
 ### POST `/gatherings/:gatheringId/reviews` 🔒
 > 팀원 리뷰 작성 (모임 종료 후)
@@ -1089,7 +1267,7 @@
 
 ---
 
-## 10. 결과 리포트 (Reports)
+## 11. 결과 리포트 (Reports)
 
 ### GET `/gatherings/:gatheringId/report` 🔒
 > 모임 결과 리포트 조회 (모임 완료 후, 멤버만)
@@ -1131,7 +1309,7 @@
 
 ---
 
-## 11. 찜하기 (Likes)
+## 12. 찜하기 (Likes)
 
 ### POST `/gatherings/:gatheringId/likes` 🔒
 > 모임 찜하기
@@ -1228,7 +1406,7 @@
 
 ---
 
-## 12. FCM 푸시 알림 (Push Notifications)
+## 13. FCM 푸시 알림 (Push Notifications)
 
 > PWA 웹 푸시를 위한 FCM 토큰 관리 API. 기존 인앱 알림(8번)과 병행 운영된다.
 > 같은 이벤트 발생 시 인앱 알림 row INSERT + FCM 푸시 발송, 두 경로로 나간다.
@@ -1267,7 +1445,7 @@
 
 ---
 
-## 13. 공통 에러 코드
+## 14. 공통 에러 코드
 
 | HTTP 코드 | Error Code | 설명 |
 |---|---|---|

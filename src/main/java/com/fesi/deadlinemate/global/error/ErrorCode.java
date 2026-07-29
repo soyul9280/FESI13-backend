@@ -85,6 +85,12 @@ public enum ErrorCode {
     INVALID_WEEKLY_GUIDE_SEQUENCE(HttpStatus.BAD_REQUEST,"주차 가이드는 1주차부터 순차적으로 입력되어야 합니다."),
     INVALID_WEEKLY_PLAN_DETAILS_COUNT(HttpStatus.BAD_REQUEST, "세부 계획은 최대 2개까지 입력할 수 있습니다."),
 
+    // GatheringDraft
+    GATHERING_DRAFT_LIMIT_EXCEEDED(HttpStatus.CONFLICT, "임시저장은 최대 5개까지 가능합니다."),
+    GATHERING_DRAFT_NOT_FOUND(HttpStatus.NOT_FOUND, "임시저장을 찾을 수 없습니다."),
+    GATHERING_DRAFT_ACCESS_DENIED(HttpStatus.FORBIDDEN, "본인의 임시저장만 접근할 수 있습니다."),
+    GATHERING_DRAFT_INVALID_DATA(HttpStatus.INTERNAL_SERVER_ERROR, "임시저장 데이터가 올바르지 않습니다."),
+
     // Membership
     NOT_A_MEMBER(HttpStatus.FORBIDDEN, "모임 멤버만 접근할 수 있습니다."),
     MEMBER_NOT_FOUND(HttpStatus.NOT_FOUND, "해당 멤버를 찾을 수 없습니다."),

@@ -104,7 +104,8 @@ public class GatheringService {
         eventPublisher.publishEvent(new GatheringCreatedEvent(
                 saved.getId(),
                 saved.getLeaderId(),
-                saved.getTitle()
+                saved.getTitle(),
+                command.draftId()
         ));
 
         return CreateGatheringResponse.from(saved,
