@@ -7,8 +7,10 @@ import com.fesi.deadlinemate.domain.gatheringDraft.entity.GatheringDraft;
 import com.fesi.deadlinemate.domain.gatheringDraft.repository.GatheringDraftRepository;
 import com.fesi.deadlinemate.global.error.BusinessException;
 import com.fesi.deadlinemate.global.error.ErrorCode;
+import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
 @Service
@@ -21,7 +23,8 @@ public class GatheringDraftService {
     private final GatheringDraftRepository gatheringDraftRepository;
 
     public GatheringDraftSaveResponse create(CreateGatheringDraftCommand command) {
-        if (gatheringDraftRepository.countByUserId(command.userId()) >= MAX_DRAFT_COUNT) {
+        List<GatheringDraft> existingDrafts = gatheringDraftRepository.findByUserIdForUpdate(command.userId());
+        if (existingDrafts.size() >= MAX_DRAFT_COUNT) {
             throw new BusinessException(ErrorCode.GATHERING_DRAFT_LIMIT_EXCEEDED);
         }
 
@@ -74,6 +77,7 @@ public class GatheringDraftService {
         gatheringDraftRepository.delete(draft);
     }
 
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
     public void deleteQuietly(Long draftId, Long userId) {
         gatheringDraftRepository.findById(draftId)
                 .filter(draft -> draft.getUserId().equals(userId))
