@@ -37,6 +37,7 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.GET, "/api/v1/users/{userId}/reviews").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/v1/gatherings").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/v1/gatherings/main").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/v1/gatherings/drafts").authenticated()
                         .requestMatchers(HttpMethod.GET, "/api/v1/gatherings/*").permitAll()
                         .requestMatchers("/api/v1/admin/**").permitAll()
                         .requestMatchers("/images/**").permitAll()

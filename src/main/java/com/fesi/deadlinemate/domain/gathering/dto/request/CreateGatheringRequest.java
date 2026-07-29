@@ -72,7 +72,10 @@ public record CreateGatheringRequest(
         LocalDate endDate,
 
         @Valid
-        List<WeeklyGuideRequest> weeklyGuides
+        List<WeeklyGuideRequest> weeklyGuides,
+
+        @Schema(example = "3", description = "이어작성한 임시저장 ID (선택) — 전달하면 모임 생성 성공 시 해당 임시저장을 서버에서 자동 삭제")
+        Long draftId
 ) {
     public CreateGatheringCommand toCommand(Long leaderId, List<String> imageUrls) {
         return CreateGatheringCommand.builder()
@@ -98,6 +101,7 @@ public record CreateGatheringRequest(
                                 .toList()
                 )
                 .imageUrls(imageUrls)
+                .draftId(draftId)
                 .build();
     }
 
