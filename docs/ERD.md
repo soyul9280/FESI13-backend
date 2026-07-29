@@ -15,6 +15,7 @@ users ────────────────────────�
   │  1:N  reviews (reviewer_id / target_user_id)                            │
   │  1:N  gathering_likes (user_id)                                         │
   │  1:N  reputation_logs (user_id)                                         │
+  │  1:N  gathering_drafts (user_id)                                        │
   └───────────────────────────────────────────────────────────────────────┘
 
 gatherings ─────────────────────────────────────────────────────────────────┐
@@ -55,6 +56,33 @@ gatherings ───────────────────────
 | `is_active` | BOOLEAN | NOT NULL | | 탈퇴 여부, 기본값 true |
 | `created_at` | TIMESTAMP | NOT NULL | | 가입일시 |
 | `updated_at` | TIMESTAMP | NOT NULL | | 수정일시 |
+
+---
+
+### `gathering_drafts` — 모임 임시저장
+
+| 컬럼명 | 타입 | NULL | KEY | 설명 |
+|---|---|---|---|---|
+| `id` | BIGINT | NOT NULL | PK | Auto Increment |
+| `user_id` | BIGINT | NOT NULL | FK → users.id | 작성자 |
+| `type` | ENUM | NULL | | `STUDY` \| `PROJECT` |
+| `category_ids` | JSON | NULL | | 선택된 카테고리 ID 배열 |
+| `title` | VARCHAR(60) | NULL | | |
+| `short_description` | VARCHAR(100) | NULL | | |
+| `description` | TEXT | NULL | | |
+| `tags` | JSON | NULL | | 태그 배열 |
+| `goal` | TEXT | NULL | | |
+| `max_members` | TINYINT | NULL | | |
+| `recruit_deadline` | DATE | NULL | | |
+| `start_date` | DATE | NULL | | |
+| `end_date` | DATE | NULL | | |
+| `weekly_guides` | JSON | NULL | | `[{ "week": 1, "title": "...", "details": [...] }, ...]` |
+| `created_at` | TIMESTAMP | NOT NULL | | 생성일시 |
+| `updated_at` | TIMESTAMP | NOT NULL | | 수정일시, "n분 전 저장" 표시에 사용 |
+
+> 실제 `gatherings`와 달리 모든 값이 NULL 허용 — 퍼널 중간 어느 단계든 저장 가능해야 하므로 컬럼 단위 제약을 두지 않음
+> 유저당 최대 5개 제한은 애플리케이션 레벨에서 강제(DB 제약 아님)
+> 모임 생성 완료 시 해당 draft row는 삭제됨
 
 ---
 
@@ -336,3 +364,4 @@ gatherings ───────────────────────
 | `fcm_tokens` | `user_id` | 사용자별 토큰 조회 |
 | `fcm_tokens` | `token` UNIQUE | 토큰 중복 방지 / 삭제 |
 | `reviews` | `(gathering_id, reviewer_id, target_user_id)` UNIQUE | 중복 리뷰 방지 |
+| `gathering_drafts` | `(user_id, updated_at)` | 내 임시저장 목록 최신순 조회 |
