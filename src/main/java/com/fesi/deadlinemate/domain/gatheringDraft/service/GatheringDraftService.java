@@ -67,6 +67,7 @@ public class GatheringDraftService {
                 command.weeklyGuides()
         );
 
+        gatheringDraftRepository.flush();
         return GatheringDraftSaveResponse.from(draft);
     }
 
