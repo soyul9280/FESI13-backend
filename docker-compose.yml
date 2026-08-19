@@ -5,15 +5,10 @@ services:
     restart: unless-stopped
     ports:
       - "8080:8080"
-    logging:
-      driver: awslogs
-      options:
-        awslogs-region: ap-northeast-2
-        awslogs-group: /fesi13/app
-        awslogs-stream: fesi13-app
     environment:
       SPRING_PROFILES_ACTIVE: prod
-      DB_URL: ${DB_URL}
+      JAVA_TOOL_OPTIONS: "-Xmx400m"
+      DB_URL: jdbc:mysql://mysql:3306/fesi13db?useSSL=false&characterEncoding=UTF-8
       DB_USERNAME: ${DB_USERNAME}
       DB_PASSWORD: ${DB_PASSWORD}
       JWT_SECRET: ${JWT_SECRET}
@@ -24,10 +19,34 @@ services:
       GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID}
       GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET}
       ADMIN_REPAIR_SECRET: ${ADMIN_REPAIR_SECRET}
+      APP_BASE_URL: ${APP_BASE_URL:-https://sailmate.store}
       IMAGE_UPLOAD_DIR: /app/data/images
-      APP_BASE_URL: https://sailmate.store
     volumes:
       - app_images:/app/data/images
+    depends_on:
+      mysql:
+        condition: service_healthy
+
+  mysql:
+    image: mysql:8.0
+    container_name: fesi13-mysql
+    restart: unless-stopped
+    command: --innodb-buffer-pool-size=64M
+    environment:
+      MYSQL_DATABASE: fesi13db
+      MYSQL_USER: ${DB_USERNAME}
+      MYSQL_PASSWORD: ${DB_PASSWORD}
+      MYSQL_ROOT_PASSWORD: ${DB_ROOT_PASSWORD}
+    volumes:
+      - mysql_data:/var/lib/mysql
+    # 8080/외부에서 접근할 필요 없으면 3306 포트는 열지 않는다 (앱 컨테이너 내부망으로만 통신)
+    healthcheck:
+      test: ["CMD-SHELL", "mysqladmin ping -h 127.0.0.1 -uroot -p$$MYSQL_ROOT_PASSWORD --silent"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      start_period: 20s
 
 volumes:
   app_images:
+  mysql_data:

@@ -111,6 +111,29 @@ public class GatheringDraft extends BaseTimeEntity {
         }
     }
 
+    public boolean hasNoContent() {
+        return type == null
+                && isBlank(title)
+                && isBlank(shortDescription)
+                && isBlank(description)
+                && isBlank(goal)
+                && isEmpty(categoryIds)
+                && isEmpty(tags)
+                && isEmpty(weeklyGuides)
+                && maxMembers == null
+                && recruitDeadline == null
+                && startDate == null
+                && endDate == null;
+    }
+
+    private static boolean isBlank(String value) {
+        return value == null || value.isBlank();
+    }
+
+    private static boolean isEmpty(List<?> value) {
+        return value == null || value.isEmpty();
+    }
+
     public void update(
             GatheringType type,
             List<Long> categoryIds,
