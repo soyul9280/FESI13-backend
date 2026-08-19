@@ -44,6 +44,10 @@ public class GatheringDraftService {
                 .weeklyGuides(command.weeklyGuides())
                 .build();
 
+        if (draft.hasNoContent()) {
+            throw new BusinessException(ErrorCode.GATHERING_DRAFT_EMPTY_CONTENT);
+        }
+
         GatheringDraft saved = gatheringDraftRepository.save(draft);
         return GatheringDraftSaveResponse.from(saved);
     }
@@ -66,6 +70,10 @@ public class GatheringDraftService {
                 command.endDate(),
                 command.weeklyGuides()
         );
+
+        if (draft.hasNoContent()) {
+            throw new BusinessException(ErrorCode.GATHERING_DRAFT_EMPTY_CONTENT);
+        }
 
         gatheringDraftRepository.flush();
         return GatheringDraftSaveResponse.from(draft);
