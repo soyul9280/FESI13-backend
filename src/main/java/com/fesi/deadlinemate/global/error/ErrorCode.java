@@ -90,6 +90,7 @@ public enum ErrorCode {
     GATHERING_DRAFT_NOT_FOUND(HttpStatus.NOT_FOUND, "임시저장을 찾을 수 없습니다."),
     GATHERING_DRAFT_ACCESS_DENIED(HttpStatus.FORBIDDEN, "본인의 임시저장만 접근할 수 있습니다."),
     GATHERING_DRAFT_INVALID_DATA(HttpStatus.INTERNAL_SERVER_ERROR, "임시저장 데이터가 올바르지 않습니다."),
+    GATHERING_DRAFT_EMPTY_CONTENT(HttpStatus.BAD_REQUEST, "최소 하나의 항목은 입력해야 임시저장할 수 있습니다."),
 
     // Membership
     NOT_A_MEMBER(HttpStatus.FORBIDDEN, "모임 멤버만 접근할 수 있습니다."),
