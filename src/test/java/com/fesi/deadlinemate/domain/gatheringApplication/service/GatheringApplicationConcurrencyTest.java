@@ -17,6 +17,8 @@ import com.fesi.deadlinemate.global.error.BusinessException;
 import com.fesi.deadlinemate.global.error.ErrorCode;
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -80,75 +82,56 @@ class GatheringApplicationConcurrencyTest {
         gatheringRepository.deleteAll();
     }
 
+    private static final int CONCURRENT_REQUEST_COUNT = 50;
+
     @Test
-    @DisplayName("정원 1명 남은 모임에 동시 수락 시도 시 한 명만 성공한다")
+    @DisplayName("정원 1명 남은 모임에 동시 수락 시도 50건이 몰려도 한 명만 성공한다")
     void 동시_수락_시_정원_초과_방지() throws InterruptedException {
-        GatheringApplication appA = applicationRepository.save(GatheringApplication.builder()
-                .gatheringId(gathering.getId())
-                .applicantId(APPLICANT_A)
-                .personalGoal("열심히 하겠습니다")
-                .status(ApplicationStatus.PENDING)
-                .build());
+        List<GatheringApplication> applications = new ArrayList<>();
+        for (int i = 0; i < CONCURRENT_REQUEST_COUNT; i++) {
+            applications.add(applicationRepository.save(GatheringApplication.builder()
+                    .gatheringId(gathering.getId())
+                    .applicantId(200L + i)
+                    .personalGoal("열심히 하겠습니다")
+                    .status(ApplicationStatus.PENDING)
+                    .build()));
+        }
 
-        GatheringApplication appB = applicationRepository.save(GatheringApplication.builder()
-                .gatheringId(gathering.getId())
-                .applicantId(APPLICANT_B)
-                .personalGoal("열심히 하겠습니다")
-                .status(ApplicationStatus.PENDING)
-                .build());
-
-        ExecutorService executor = Executors.newFixedThreadPool(2);
+        ExecutorService executor = Executors.newFixedThreadPool(CONCURRENT_REQUEST_COUNT);
         CountDownLatch startLatch = new CountDownLatch(1);
-        CountDownLatch doneLatch  = new CountDownLatch(2);
+        CountDownLatch doneLatch  = new CountDownLatch(CONCURRENT_REQUEST_COUNT);
         AtomicInteger successCount = new AtomicInteger(0);
         AtomicInteger fullCount    = new AtomicInteger(0);
 
-        executor.submit(() -> {
-            try {
-                startLatch.await();
-                service.updateApplication(UpdateApplicationCommand.builder()
-                        .gatheringId(gathering.getId())
-                        .applicationId(appA.getId())
-                        .requesterId(LEADER_ID)
-                        .status(ApplicationStatus.ACCEPTED)
-                        .build());
-                successCount.incrementAndGet();
-            } catch (BusinessException e) {
-                if (e.getErrorCode() == ErrorCode.GATHERING_FULL) fullCount.incrementAndGet();
-            } catch (InterruptedException e) {
-                Thread.currentThread().interrupt();
-            } finally {
-                doneLatch.countDown();
-            }
-        });
-
-        executor.submit(() -> {
-            try {
-                startLatch.await();
-                service.updateApplication(UpdateApplicationCommand.builder()
-                        .gatheringId(gathering.getId())
-                        .applicationId(appB.getId())
-                        .requesterId(LEADER_ID)
-                        .status(ApplicationStatus.ACCEPTED)
-                        .build());
-                successCount.incrementAndGet();
-            } catch (BusinessException e) {
-                if (e.getErrorCode() == ErrorCode.GATHERING_FULL) fullCount.incrementAndGet();
-            } catch (InterruptedException e) {
-                Thread.currentThread().interrupt();
-            } finally {
-                doneLatch.countDown();
-            }
-        });
+        for (GatheringApplication application : applications) {
+            executor.submit(() -> {
+                try {
+                    startLatch.await();
+                    service.updateApplication(UpdateApplicationCommand.builder()
+                            .gatheringId(gathering.getId())
+                            .applicationId(application.getId())
+                            .requesterId(LEADER_ID)
+                            .status(ApplicationStatus.ACCEPTED)
+                            .build());
+                    successCount.incrementAndGet();
+                } catch (BusinessException e) {
+                    if (e.getErrorCode() == ErrorCode.GATHERING_FULL) fullCount.incrementAndGet();
+                } catch (InterruptedException e) {
+                    Thread.currentThread().interrupt();
+                } finally {
+                    doneLatch.countDown();
+                }
+            });
+        }
 
         startLatch.countDown();
-        boolean completed = doneLatch.await(5, TimeUnit.SECONDS);
+        boolean completed = doneLatch.await(10, TimeUnit.SECONDS);
         executor.shutdown();
-        assertThat(completed).as("두 스레드가 5초 내에 완료되어야 합니다").isTrue();
+        assertThat(completed).as(CONCURRENT_REQUEST_COUNT + "개 스레드가 10초 내에 완료되어야 합니다").isTrue();
 
         Gathering refreshed = gatheringRepository.findById(gathering.getId()).orElseThrow();
         assertThat(successCount.get()).isEqualTo(1);
-        assertThat(fullCount.get()).isEqualTo(1);
+        assertThat(fullCount.get()).isEqualTo(CONCURRENT_REQUEST_COUNT - 1);
         assertThat(refreshed.getCurrentMembers()).isEqualTo(2);
         assertThat(memberRepository.findByGatheringIdAndIsActiveTrueOrderByIdAsc(gathering.getId())).hasSize(2);
     }
