@@ -417,7 +417,25 @@
 **Response `201`**
 ```json
 {
-  "gathering": { "id": 1, "...": "모임 전체 정보" }
+  "success": true,
+  "data": {
+    "id": 1,
+    "type": "스터디",
+    "categories": ["개발", "자격증"],
+    "title": "React 완전 정복 스터디",
+    "shortDescription": "리액트 공식문서를 같이 읽어요",
+    "description": "매주 공식문서 1챕터씩 읽고 블로그를 작성합니다...",
+    "tags": ["React", "프론트엔드"],
+    "goal": "React 공식문서 완독 + 블로그 5편 작성",
+    "maxMembers": 6,
+    "currentMembers": 1,
+    "recruitDeadline": "2025-03-20",
+    "startDate": "2025-03-22",
+    "endDate": "2025-04-19",
+    "totalWeeks": 4,
+    "status": "RECRUITING",
+    "imageUrls": ["https://example.com/meeting1.jpg"]
+  }
 }
 ```
 
@@ -534,12 +552,31 @@
 **Response `200`**
 ```json
 {
-  "gathering": { "...": "수정된 모임 정보" }
+  "success": true,
+  "data": {
+    "id": 1,
+    "type": "스터디",
+    "categories": ["개발", "자격증"],
+    "title": "React 심화 스터디 모집",
+    "shortDescription": "React 훅과 상태관리를 깊게 파고드는 스터디",
+    "description": "매주 React 심화 개념을 학습하고 실제 프로젝트에 적용합니다...",
+    "goal": "React 심화 개념 완전 이해 및 실무 적용",
+    "maxMembers": 6,
+    "currentMembers": 3,
+    "recruitDeadline": "2025-03-20",
+    "startDate": "2025-03-22",
+    "endDate": "2025-04-19",
+    "totalWeeks": 4,
+    "status": "RECRUITING",
+    "tags": ["React", "프론트엔드"],
+    "imageUrls": null
+  }
 }
 ```
 
 **비고**
 - categoryIds: number[] (카테고리 수정 가능)
+- ⚠️ `imageUrls`는 현재 서버 구현상 항상 `null`로 응답됨 (`UpdateGatheringResponse.from()`에서 값이 채워지지 않는 버그로 추정, 별도 확인 필요)
 
 ---
 

@@ -9,6 +9,7 @@ import com.fesi.deadlinemate.global.error.BusinessException;
 import com.fesi.deadlinemate.global.error.ErrorCode;
 import lombok.RequiredArgsConstructor;
 import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.orm.ObjectOptimisticLockingFailureException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -50,7 +51,12 @@ public class GatheringLikeService {
         GatheringLike gatheringLike = gatheringLikeRepository.findByGatheringIdAndUserId(gatheringId, userId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.GATHERING_LIKE_NOT_FOUND));
 
-        gatheringLikeRepository.delete(gatheringLike);
+        try {
+            gatheringLikeRepository.delete(gatheringLike);
+            gatheringLikeRepository.flush();
+        } catch (ObjectOptimisticLockingFailureException e) {
+            throw new BusinessException(ErrorCode.GATHERING_LIKE_NOT_FOUND);
+        }
     }
 
     private void validateUserExists(Long userId) {

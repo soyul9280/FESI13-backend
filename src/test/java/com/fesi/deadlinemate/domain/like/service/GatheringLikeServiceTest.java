@@ -24,6 +24,7 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.orm.ObjectOptimisticLockingFailureException;
 
 @ExtendWith(MockitoExtension.class)
 class GatheringLikeServiceTest {
@@ -125,5 +126,32 @@ class GatheringLikeServiceTest {
                 .isEqualTo(ErrorCode.GATHERING_LIKE_NOT_FOUND);
 
         verify(gatheringLikeRepository, never()).delete(any());
+    }
+
+    @Test
+    @DisplayName("동시 찜 취소로 이미 삭제된 찜을 다시 지우려 하면 찜 없음 예외로 변환한다")
+    void unlike_fail_whenAlreadyDeletedConcurrently() {
+        // given
+        Long gatheringId = 1L;
+        Long userId = 100L;
+
+        GatheringLike gatheringLike = GatheringLike.builder()
+                .gatheringId(gatheringId)
+                .userId(userId)
+                .build();
+
+        when(userClient.existsById(userId)).thenReturn(true);
+        when(gatheringRepository.existsById(gatheringId)).thenReturn(true);
+        when(gatheringLikeRepository.findByGatheringIdAndUserId(gatheringId, userId))
+                .thenReturn(Optional.of(gatheringLike));
+        doThrow(new ObjectOptimisticLockingFailureException(GatheringLike.class, 1L))
+                .when(gatheringLikeRepository)
+                .flush();
+
+        // when & then
+        assertThatThrownBy(() -> gatheringLikeService.unlike(gatheringId, userId))
+                .isInstanceOf(BusinessException.class)
+                .extracting(ex -> ((BusinessException) ex).getErrorCode())
+                .isEqualTo(ErrorCode.GATHERING_LIKE_NOT_FOUND);
     }
 }
